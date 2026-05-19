@@ -298,3 +298,45 @@ function showToast(msg){
   t.classList.add('show')
   setTimeout(() => t.classList.remove('show'), 2600)
 }
+// Page TV
+if(window.location.search === '?tv'){
+  document.body.innerHTML = `<div id="tv"></div>`
+  document.body.style.cssText = 'background:linear-gradient(160deg,#3A1050 0%,#5A1F78 40%,#C490DD 80%,white 100%);min-height:100vh;padding:32px;font-family:Barlow,sans-serif;color:white'
+  const tvDiv = document.getElementById('tv')
+  onValue(ref(db,'companies'), snap => {
+    if(!snap.exists()){ tvDiv.innerHTML = '<p style="text-align:center;opacity:0.5;font-size:20px;margin-top:40px">En attente des participants...</p>'; return }
+    const all = Object.values(snap.val()).sort((a,b)=>(b.score||0)-(a.score||0))
+    const medals = ['1ER','2E','3E']
+    tvDiv.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:32px">
+        <img src="/logo.png" style="height:64px">
+        <div style="text-align:right">
+          <div style="font-size:13px;opacity:0.5;letter-spacing:3px;text-transform:uppercase;font-family:'Barlow Condensed',sans-serif">Journée Portes Ouvertes · Blois 2026</div>
+          <div style="font-size:42px;font-weight:800;font-family:'Barlow Condensed',sans-serif">Classement Live</div>
+        </div>
+      </div>
+      <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);padding:6px 16px;border-radius:20px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;margin-bottom:32px">
+        <div style="width:8px;height:8px;border-radius:50%;background:#7BF;animation:pulse 1.5s infinite"></div>EN DIRECT
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+        ${all.slice(0,3).map((c,i)=>`
+          <div style="background:rgba(255,255,255,${i===0?'0.18':'0.08'});border:1px solid rgba(255,255,255,${i===0?'0.4':'0.15'});border-radius:20px;padding:24px 16px;text-align:center;${i===0?'transform:scale(1.04)':''}">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;opacity:0.6;letter-spacing:2px;margin-bottom:8px">${medals[i]}</div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;margin-bottom:6px">${c.name}</div>
+            <div style="font-size:18px;opacity:0.65">${c.score||0} / 25 stands</div>
+            <div style="height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin-top:14px"><div style="height:100%;background:white;border-radius:2px;width:${((c.score||0)/25*100)}%"></div></div>
+          </div>`).join('')}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        ${all.slice(3).map((c,i)=>`
+          <div style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px 20px;display:flex;align-items:center;gap:16px">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;opacity:0.4;width:32px;text-align:center">${i+4}</div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;flex:1">${c.name}</div>
+            <div style="width:180px;height:6px;background:rgba(255,255,255,0.12);border-radius:3px"><div style="height:100%;background:rgba(255,255,255,0.6);border-radius:3px;width:${((c.score||0)/25*100)}%"></div></div>
+            <div style="text-align:right"><div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800">${c.score||0}</div><div style="font-size:13px;opacity:0.5">/25</div></div>
+          </div>`).join('')}
+      </div>
+      <div style="margin-top:32px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;opacity:0.3;letter-spacing:2px;text-transform:uppercase">${all.length} entreprise${all.length>1?'s':''} en compétition</div>
+    `
+  })
+}
