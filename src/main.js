@@ -1,12 +1,11 @@
 import './style.css'
 
 const STANDS = [
-  'Schneider','Hager','Legrand','E-Robur','Unex',
-  'Urmet','Asled','Milwaukee','Osram','Rexel',
-  'ABB','Siemens','Wago','Phoenix Contact','Finder',
-  'Gewiss','IDE','Eaton','Chint','Socomec',
-  'Bticino','Vynckier','Wieland','Lapp','Helukabel',
-  'Dehn','OBO','Cembre','Rittal','Delta'
+  'Airwell','Roger Pradier','Soler & Palau','Came France','Ledvance',
+  'Asled','Intuis','Europole','Bailey Lights','Hager',
+  'Finder France','Axelair','Sermes','Courant','Indigo Lighting',
+  'Gewiss France','Feilo Sylvania','Engitechs','Theben','Airzone France',
+  'Aiphone','Somfy / BFT','Deltadore','Urmet','Teddington'
 ]
 
 document.querySelector('#app').innerHTML = `
