@@ -139,6 +139,7 @@ document.getElementById('btn-start').addEventListener('click', async () => {
   if(!val){ showToast('Veuillez saisir le nom de votre entreprise'); return }
   state.company = val
   state.companyKey = toKey(val)
+  localStorage.setItem('royelec-company', val)
   const snap = await get(ref(db, 'companies/' + state.companyKey))
   if(snap.exists()){
     state.visited = snap.val().stands || []
@@ -277,6 +278,18 @@ document.getElementById('btn-back-lb').addEventListener('click', () => {
   if(lbUnsub){ lbUnsub(); lbUnsub = null }
   if(state.company) show('s-progression'); else show('s-accueil')
 })
+// Restauration automatique au chargement
+
+const saved = localStorage.getItem('royelec-company')
+if(saved){
+  state.company = saved
+  state.companyKey = toKey(saved)
+  get(ref(db, 'companies/' + state.companyKey)).then(snap => {
+    if(snap.exists()) state.visited = snap.val().stands || []
+    updateProg()
+    show('s-progression')
+  })
+}
 
 // --- Toast ---
 function showToast(msg){
