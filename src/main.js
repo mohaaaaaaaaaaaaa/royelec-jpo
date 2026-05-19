@@ -11,7 +11,7 @@ const STANDS = [
 document.querySelector('#app').innerHTML = `
 <div id="s-accueil" class="screen active">
   <div class="hdr">
-    <div class="logo">ROY<span>elec</span></div>
+    <img src="/logo.png" alt="ROYELEC" class="logo-img">
     <div class="hdr-right">
       <p>Blois · 2026</p>
       <h2>Portes Ouvertes</h2>

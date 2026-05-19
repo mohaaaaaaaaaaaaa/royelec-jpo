@@ -15,6 +15,7 @@ html,body{height:100%;background:var(--white);color:var(--text);font-family:'Bar
 .hdr{background:linear-gradient(135deg,var(--v1) 0%,var(--v2) 100%);padding:16px 22px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .logo{font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;color:white}
 .logo span{color:var(--v5)}
+.logo-img{height:48px;object-fit:contain}
 .hdr-right{text-align:right}
 .hdr-right p{font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:600;color:rgba(255,255,255,0.5);letter-spacing:2px;text-transform:uppercase}
 .hdr-right h2{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;color:white}
