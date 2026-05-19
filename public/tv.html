@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROYELEC JPO — Classement Live</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--v1:#3A1050;--v2:#5A1F78;--v3:#7B2D9B;--v4:#9B4DBB;--v5:#C490DD;--v6:#E8D0F5;--v7:#F5EDFB;--border:#DCC5F0}
+body{background:linear-gradient(160deg,var(--v1) 0%,var(--v2) 40%,var(--v5) 80%,white 100%);min-height:100vh;font-family:'Barlow',sans-serif;color:white;padding:32px}
+
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px}
+.header-logo{height:64px;object-fit:contain}
+.header-right{text-align:right}
+.header-right p{font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:600;color:rgba(255,255,255,0.5);letter-spacing:3px;text-transform:uppercase}
+.header-right h1{font-family:'Barlow Condensed',sans-serif;font-size:42px;font-weight:800;color:white;line-height:1}
+
+.live-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);padding:6px 16px;border-radius:20px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;margin-bottom:32px}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#7BF;animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+
+.podium{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px}
+.pod{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:24px 16px;text-align:center;transition:all 0.5s ease}
+.pod.first{background:rgba(255,255,255,0.18);border-color:rgba(255,255,255,0.4);transform:scale(1.04)}
+.pod-medal{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;color:rgba(255,255,255,0.6);letter-spacing:2px;margin-bottom:8px}
+.pod.first .pod-medal{color:white}
+.pod-name{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;color:white;line-height:1.1;margin-bottom:6px}
+.pod-score{font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:600;color:rgba(255,255,255,0.65)}
+.pod-bar-wrap{height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin-top:14px;overflow:hidden}
+.pod-bar{height:100%;background:white;border-radius:2px;transition:width 0.8s ease}
+
+.list{display:flex;flex-direction:column;gap:10px}
+.row{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px 20px;display:flex;align-items:center;gap:16px;transition:all 0.5s ease}
+.row-n{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:rgba(255,255,255,0.4);width:32px;text-align:center}
+.row-name{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;color:white;flex:1}
+.row-score{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:white}
+.row-total{font-size:13px;color:rgba(255,255,255,0.5)}
+.row-bar-wrap{width:180px;height:6px;background:rgba(255,255,255,0.12);border-radius:3px;overflow:hidden}
+.row-bar{height:100%;background:rgba(255,255,255,0.6);border-radius:3px;transition:width 0.8s ease}
+
+.footer{margin-top:32px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;color:rgba(255,255,255,0.3);letter-spacing:2px;text-transform:uppercase}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <img class="header-logo" src="/logo.png" alt="ROYELEC">
+  <div class="header-right">
+    <p>Journée Portes Ouvertes · Blois 2026</p>
+    <h1>Classement Live</h1>
+  </div>
+</div>
+
+<div class="live-badge"><div class="live-dot"></div>EN DIRECT</div>
+
+<div class="podium" id="podium"></div>
+<div class="list" id="list"></div>
+
+<div class="footer" id="footer">Chargement...</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js'
+import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js'
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDJ_naM3flZO5cHjUPA-6owhUL_vfAd0BU",
+  authDomain: "royelecjpo.firebaseapp.com",
+  databaseURL: "https://royelecjpo-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "royelecjpo",
+  storageBucket: "royelecjpo.firebasestorage.app",
+  messagingSenderId: "851684025105",
+  appId: "1:851684025105:web:d2bf3347c5d6bd1e9d62b0"
+}
+
+const TOTAL = 25
+const app = initializeApp(firebaseConfig)
+const db = getDatabase(app)
+
+onValue(ref(db, 'companies'), snap => {
+  if(!snap.exists()){
+    document.getElementById('footer').textContent = 'En attente des premiers participants...'
+    return
+  }
+  const all = Object.values(snap.val()).sort((a,b) => (b.score||0) - (a.score||0))
+  const medals = ['1ER','2E','3E']
+  const top = all.slice(0,3)
+  const maxScore = top[0]?.score || 1
+
+  document.getElementById('podium').innerHTML = top.map((c,i) => `
+    <div class="pod ${i===0?'first':''}">
+      <div class="pod-medal">${medals[i]}</div>
+      <div class="pod-name">${c.name}</div>
+      <div class="pod-score">${c.score||0} / ${TOTAL} stands</div>
+      <div class="pod-bar-wrap"><div class="pod-bar" style="width:${((c.score||0)/TOTAL*100)}%"></div></div>
+    </div>
+  `).join('')
+
+  document.getElementById('list').innerHTML = all.slice(3).map((c,i) => `
+    <div class="row">
+      <div class="row-n">${i+4}</div>
+      <div class="row-name">${c.name}</div>
+      <div class="row-bar-wrap"><div class="row-bar" style="width:${((c.score||0)/TOTAL*100)}%"></div></div>
+      <div style="text-align:right"><div class="row-score">${c.score||0}</div><div class="row-total">/${TOTAL}</div></div>
+    </div>
+  `).join('')
+
+  document.getElementById('footer').textContent = all.length + ' entreprise' + (all.length>1?'s':'') + ' en compétition'
+})
+</script>
+</body>
+</html>
