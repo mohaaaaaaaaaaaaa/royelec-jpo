@@ -1,11 +1,11 @@
 import './style.css'
 
 const STANDS = [
-  'Airwell','Roger Pradier','Soler & Palau','Came France','Ledvance',
+  'Airwell','Roger Pradier','Soler-Palau','Came France','Ledvance',
   'Asled','Intuis','Europole','Bailey Lights','Hager',
   'Finder France','Axelair','Sermes','Courant','Indigo Lighting',
   'Gewiss France','Feilo Sylvania','Engitechs','Theben','Airzone France',
-  'Aiphone','Somfy / BFT','Deltadore','Urmet','Teddington'
+  'Aiphone','Somfy-BFT','Deltadore','Urmet','Teddington'
 ]
 
 document.querySelector('#app').innerHTML = `
