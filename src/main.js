@@ -1,11 +1,32 @@
 import './style.css'
 
 const STANDS = [
-  'Airwell','Roger Pradier','Soler-Palau','Came France','Ledvance',
-  'Asled','Intuis','Europole','Bailey Lights','Hager',
-  'Finder France','Axelair','Sermes','Courant','Indigo Lighting',
-  'Gewiss France','Feilo Sylvania','Engitechs','Theben','Airzone France',
-  'Aiphone','Somfy-BFT','Deltadore','Urmet','Teddington'
+  { name: 'Airwell',        slug: 'airwell',        logo: 'airwell.svg' },
+  { name: 'Roger Pradier',  slug: 'roger-pradier',  logo: 'roger-pradier.svg' },
+  { name: 'Soler-Palau',    slug: 'soler-palau',    logo: 'soler-palau.svg' },
+  { name: 'Came France',    slug: 'came-france',    logo: 'came-france.png' },
+  { name: 'Ledvance',       slug: 'ledvance',       logo: 'ledvance.svg' },
+  { name: 'Asled',          slug: 'asled',          logo: 'asled.png' },
+  { name: 'Intuis',         slug: 'intuis',         logo: 'intuis.png' },
+  { name: 'Europole',       slug: 'europole',       logo: 'europole.svg' },
+  { name: 'Bailey Lights',  slug: 'bailey-lights',  logo: 'bailey-lights.svg' },
+  { name: 'Hager',          slug: 'hager',          logo: 'hager.webp' },
+  { name: 'Finder France',  slug: 'finder-france',  logo: 'finder-france.png' },
+  { name: 'Axelair',        slug: 'axelair',        logo: 'axelair.svg' },
+  { name: 'Sermes',         slug: 'sermes',         logo: 'sermes.png' },
+  { name: 'Courant',        slug: 'courant',        logo: 'courant.png' },
+  { name: 'Indigo Lighting',slug: 'indigo-lighting',logo: 'indigo-lighting.png' },
+  { name: 'Gewiss France',  slug: 'gewiss-france',  logo: 'gewiss-france.jpg' },
+  { name: 'Feilo Sylvania', slug: 'feilo-sylvania', logo: 'feilo-sylvania.webp' },
+  { name: 'Engitechs',      slug: 'engitechs',      logo: 'engitechs.svg' },
+  { name: 'Theben',         slug: 'theben',         logo: 'theben.svg' },
+  { name: 'Airzone France', slug: 'airzone-france', logo: 'airzone-france.svg' },
+  { name: 'Aiphone',        slug: 'aiphone',        logo: 'aiphone.svg' },
+  { name: 'Somfy-BFT',      slug: 'somfy-bft',      logo: 'somfy-bft.svg' },
+  { name: 'Deltadore',      slug: 'deltadore',      logo: 'deltadore.svg' },
+  { name: 'Urmet',          slug: 'urmet',          logo: 'urmet.svg' },
+  { name: 'Teddington',     slug: 'teddington',     logo: 'teddington.png' },
+  { name: 'Thermor',        slug: 'thermor',        logo: 'thermor.svg' },
 ]
 
 document.querySelector('#app').innerHTML = `
@@ -119,14 +140,12 @@ const firebaseConfig = {
 const fbApp = initializeApp(firebaseConfig)
 const db = getDatabase(fbApp)
 
-// --- State ---
 let state = { company: '', visited: [], companyKey: '' }
 let html5QrCode = null
 let lbUnsub = null
 
 function toKey(name){ return name.toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'') }
 
-// --- Navigation ---
 function show(id){
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'))
   document.getElementById(id).classList.add('active')
@@ -164,9 +183,20 @@ function updateProg(){
   document.getElementById('s-visited').textContent = v
   document.getElementById('s-remaining').textContent = t - v
   document.getElementById('circ').style.strokeDashoffset = 264 - (264 * pct / 100)
-  document.getElementById('stands-grid').innerHTML = STANDS.map(s =>
-    `<div class="chip ${state.visited.includes(s)?'done':'un'}">${s}</div>`
-  ).join('')
+
+  document.getElementById('stands-grid').innerHTML = STANDS.map(s => {
+    const visited = state.visited.includes(s.name)
+    return `<div class="chip ${visited ? 'done' : 'un'}">
+      <div class="chip-logo-wrap">
+        <img class="chip-logo" src="/logos/${s.logo}" alt="${s.name}"
+          onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+        <span class="chip-name-fallback" style="display:none">${s.name}</span>
+      </div>
+      <span class="chip-name">${s.name}</span>
+      ${visited ? '<span class="chip-check">✓</span>' : ''}
+    </div>`
+  }).join('')
+
   get(ref(db,'companies')).then(snap => {
     if(!snap.exists()) return
     const all = Object.values(snap.val()).sort((a,b)=>(b.score||0)-(a.score||0))
@@ -207,28 +237,84 @@ function startCamera(){
 }
 
 function onScanSuccess(text){
-  const brand = extractBrand(text)
-  if(!brand){ showToast('QR code non reconnu'); return }
-  if(state.visited.includes(brand)){ showToast(brand + ' déjà visité'); return }
-  state.visited.push(brand)
+  const stand = extractStand(text)
+  if(!stand){ showToast('QR code non reconnu'); return }
+  if(state.visited.includes(stand.name)){ showToast(stand.name + ' déjà visité'); return }
+  state.visited.push(stand.name)
   update(ref(db, 'companies/' + state.companyKey), { stands: state.visited, score: state.visited.length, name: state.company })
-  document.getElementById('scan-brand').textContent = brand
-  document.getElementById('scan-status').style.display = 'none'
-  document.getElementById('scan-ok').style.display = 'block'
-  setTimeout(() => { stopScanner(); updateProg(); show('s-progression') }, 1800)
+  stopScanner()
+  showScanAnimation(stand.name, state.visited.length, STANDS.length)
 }
 
-function extractBrand(url){
+function showScanAnimation(brandName, visited, total){
+  const pct = Math.round(visited/total*100)
+  const prevPct = Math.round((visited-1)/total*100)
+  const overlay = document.createElement('div')
+  overlay.style.cssText = `
+    position:fixed;inset:0;background:linear-gradient(135deg,#3A1050,#7B2D9B);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    z-index:9999;opacity:0;transition:opacity .3s
+  `
+  overlay.innerHTML = `
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:rgba(255,255,255,0.6);letter-spacing:3px;text-transform:uppercase;margin-bottom:32px">Stand validé</div>
+    <div style="position:relative;width:220px;height:220px;margin-bottom:32px">
+      <svg width="220" height="220" viewBox="0 0 220 220" style="transform:rotate(-90deg)">
+        <circle cx="110" cy="110" r="96" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="12"/>
+        <circle id="anim-circle" cx="110" cy="110" r="96" fill="none" stroke="white" stroke-width="12"
+          stroke-linecap="round"
+          stroke-dasharray="603"
+          stroke-dashoffset="${603 - (603*prevPct/100)}"
+          style="transition:stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1)"/>
+      </svg>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+        <span id="anim-pct" style="font-family:'Barlow Condensed',sans-serif;font-size:64px;font-weight:800;color:white;line-height:1">${prevPct}%</span>
+        <span style="font-size:12px;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:2px">visité</span>
+      </div>
+    </div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;color:white;margin-bottom:8px">${brandName}</div>
+    <div style="font-size:14px;color:rgba(255,255,255,0.6)">${visited} / ${total} stands</div>
+  `
+  document.body.appendChild(overlay)
+  requestAnimationFrame(() => {
+    overlay.style.opacity = '1'
+    setTimeout(() => {
+      const circle = overlay.querySelector('#anim-circle')
+      const pctEl = overlay.querySelector('#anim-pct')
+      circle.style.strokeDashoffset = 603 - (603*pct/100)
+      // Animer le chiffre
+      let current = prevPct
+      const step = () => {
+        if(current < pct){
+          current++
+          pctEl.textContent = current + '%'
+          setTimeout(step, 1200/Math.max(1,(pct-prevPct)))
+        }
+      }
+      step()
+    }, 100)
+    setTimeout(() => {
+      overlay.style.opacity = '0'
+      setTimeout(() => {
+        overlay.remove()
+        updateProg()
+        show('s-progression')
+      }, 300)
+    }, 2800)
+  })
+}
+
+function extractStand(url){
   try {
     const u = new URL(url)
     const parts = u.pathname.split('/')
     const idx = parts.findIndex(p => p === 'scan')
     if(idx >= 0 && parts[idx+1]){
       const slug = decodeURIComponent(parts[idx+1]).toLowerCase()
-      return STANDS.find(s => s.toLowerCase() === slug || s.toLowerCase().replace(/\s+/g,'-') === slug) || null
+      return STANDS.find(s => s.slug === slug) || null
     }
   } catch(e) {
-    return STANDS.find(s => s.toLowerCase() === url.trim().toLowerCase()) || null
+    const slug = url.trim().toLowerCase()
+    return STANDS.find(s => s.slug === slug) || null
   }
   return null
 }
@@ -278,8 +364,8 @@ document.getElementById('btn-back-lb').addEventListener('click', () => {
   if(lbUnsub){ lbUnsub(); lbUnsub = null }
   if(state.company) show('s-progression'); else show('s-accueil')
 })
-// Restauration automatique au chargement
 
+// --- Restauration automatique ---
 const saved = localStorage.getItem('royelec-company')
 if(saved){
   state.company = saved
@@ -298,7 +384,8 @@ function showToast(msg){
   t.classList.add('show')
   setTimeout(() => t.classList.remove('show'), 2600)
 }
-// Page TV
+
+// --- Page TV ---
 if(window.location.search === '?tv'){
   document.body.innerHTML = `<div id="tv"></div>`
   document.body.style.cssText = 'background:linear-gradient(160deg,#3A1050 0%,#5A1F78 40%,#C490DD 80%,white 100%);min-height:100vh;padding:32px;font-family:Barlow,sans-serif;color:white'
@@ -323,8 +410,8 @@ if(window.location.search === '?tv'){
           <div style="background:rgba(255,255,255,${i===0?'0.18':'0.08'});border:1px solid rgba(255,255,255,${i===0?'0.4':'0.15'});border-radius:20px;padding:24px 16px;text-align:center;${i===0?'transform:scale(1.04)':''}">
             <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;opacity:0.6;letter-spacing:2px;margin-bottom:8px">${medals[i]}</div>
             <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;margin-bottom:6px">${c.name}</div>
-            <div style="font-size:18px;opacity:0.65">${c.score||0} / 25 stands</div>
-            <div style="height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin-top:14px"><div style="height:100%;background:white;border-radius:2px;width:${((c.score||0)/25*100)}%"></div></div>
+            <div style="font-size:18px;opacity:0.65">${c.score||0} / ${STANDS.length} stands</div>
+            <div style="height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin-top:14px"><div style="height:100%;background:white;border-radius:2px;width:${((c.score||0)/STANDS.length*100)}%"></div></div>
           </div>`).join('')}
       </div>
       <div style="display:flex;flex-direction:column;gap:10px">
@@ -332,8 +419,8 @@ if(window.location.search === '?tv'){
           <div style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px 20px;display:flex;align-items:center;gap:16px">
             <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;opacity:0.4;width:32px;text-align:center">${i+4}</div>
             <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;flex:1">${c.name}</div>
-            <div style="width:180px;height:6px;background:rgba(255,255,255,0.12);border-radius:3px"><div style="height:100%;background:rgba(255,255,255,0.6);border-radius:3px;width:${((c.score||0)/25*100)}%"></div></div>
-            <div style="text-align:right"><div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800">${c.score||0}</div><div style="font-size:13px;opacity:0.5">/25</div></div>
+            <div style="width:180px;height:6px;background:rgba(255,255,255,0.12);border-radius:3px"><div style="height:100%;background:rgba(255,255,255,0.6);border-radius:3px;width:${((c.score||0)/STANDS.length*100)}%"></div></div>
+            <div style="text-align:right"><div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800">${c.score||0}</div><div style="font-size:13px;opacity:0.5">/${STANDS.length}</div></div>
           </div>`).join('')}
       </div>
       <div style="margin-top:32px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;opacity:0.3;letter-spacing:2px;text-transform:uppercase">${all.length} entreprise${all.length>1?'s':''} en compétition</div>
