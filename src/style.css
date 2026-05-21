@@ -121,3 +121,14 @@ html,body{height:100%;background:var(--white);color:var(--text);font-family:'Bar
 
 .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--v1);color:white;padding:11px 22px;border-radius:30px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;white-space:nowrap}
 .toast.show{opacity:1}
+.prog-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:4px}
+.prog-action-btn{padding:12px;background:white;border:1.5px solid var(--border);border-radius:12px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:var(--v2);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px}
+.prog-action-icon{font-size:22px}
+.fourn-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:white;border-radius:12px;border:1px solid var(--border);margin-bottom:8px;text-decoration:none;color:var(--text)}
+.fourn-logo-wrap{width:60px;height:40px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.fourn-logo{max-width:60px;max-height:38px;object-fit:contain}
+.fourn-info{flex:1}
+.fourn-name{font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:var(--v1)}
+.fourn-url{font-size:11px;color:var(--v4)}
+.fourn-arrow{font-size:18px;color:var(--v4)}
+.pod-finish{font-size:10px;color:var(--v3);font-weight:700;margin-top:2px}
