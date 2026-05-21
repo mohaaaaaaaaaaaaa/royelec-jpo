@@ -150,7 +150,6 @@ document.querySelector('#app').innerHTML = `
 <div class="toast" id="toast"></div>
 `
 
-// --- Firebase ---
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js'
 import { getDatabase, ref, set, get, onValue, update } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js'
 
@@ -194,6 +193,46 @@ function startTimer(){
     const el = document.getElementById('s-timer')
     if(el) el.textContent = formatTime(Date.now() - state.startTime)
   }, 1000)
+}
+
+// Sons via Web Audio API
+function createAudioContext(){
+  return new (window.AudioContext || window.webkitAudioContext)()
+}
+
+function playTickSound(){
+  try {
+    const ctx = createAudioContext()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.frequency.value = 800
+    gain.gain.setValueAtTime(0.15, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.06)
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.06)
+  } catch(e){}
+}
+
+function playWinSound(){
+  try {
+    const ctx = createAudioContext()
+    const notes = [523, 659, 784, 1047]
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.frequency.value = freq
+      osc.type = 'sine'
+      gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.12)
+      gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + i * 0.12 + 0.05)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.12 + 0.3)
+      osc.start(ctx.currentTime + i * 0.12)
+      osc.stop(ctx.currentTime + i * 0.12 + 0.3)
+    })
+  } catch(e){}
 }
 
 // --- Accueil ---
@@ -252,11 +291,10 @@ function updateProg(){
 
   get(ref(db,'companies')).then(snap => {
     if(!snap.exists()) return
-    const all = Object.values(snap.val())
-      .sort((a,b) => {
-        if((b.score||0) !== (a.score||0)) return (b.score||0) - (a.score||0)
-        return (a.finishTime||Infinity) - (b.finishTime||Infinity)
-      })
+    const all = Object.values(snap.val()).sort((a,b) => {
+      if((b.score||0) !== (a.score||0)) return (b.score||0) - (a.score||0)
+      return (a.finishTime||Infinity) - (b.finishTime||Infinity)
+    })
     const idx = all.findIndex(c => toKey(c.name) === state.companyKey)
     document.getElementById('p-rank').textContent = '#' + (idx >= 0 ? idx+1 : '—')
   })
@@ -292,47 +330,38 @@ document.getElementById('btn-fournisseurs').addEventListener('click', () => {
 
 document.getElementById('btn-back-fourn').addEventListener('click', () => show('s-progression'))
 
-// --- Prix à gagner ---
-document.getElementById('btn-prizes-preview').addEventListener('click', () => {
-  showPrizesPreview()
-})
+// --- Prix à gagner (style casino) ---
+document.getElementById('btn-prizes-preview').addEventListener('click', showPrizesPreview)
 
 function showPrizesPreview(){
-  let current = 0
   const overlay = document.createElement('div')
-  overlay.style.cssText = `position:fixed;inset:0;background:rgba(30,0,50,0.88);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;opacity:0;transition:opacity .3s;padding:24px`
-  
-  const render = () => {
-    const p = PRIZES[current]
-    overlay.innerHTML = `
-      <div style="background:white;border-radius:20px;padding:28px;max-width:340px;width:100%;text-align:center">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#9B4DBB;margin-bottom:6px">Complétez les 26 stands</div>
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:800;color:#3A1050;margin-bottom:20px">Prix à gagner</div>
-        
-        <div style="position:relative;background:#F5EDFB;border-radius:16px;padding:20px;margin-bottom:16px">
-          <img src="${p.img}" style="width:160px;height:140px;object-fit:contain;border-radius:10px;margin-bottom:12px">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:#3A1050">${p.name}</div>
-          <div style="font-size:12px;color:#9B4DBB;margin-top:4px">Tirage au sort</div>
-        </div>
-
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-          <button id="prev-prize" style="padding:8px 16px;background:${current===0?'#EDE0F8':'#7B2D9B'};color:${current===0?'#9B4DBB':'white'};border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;cursor:pointer;${current===0?'opacity:0.4':''}">←</button>
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:#9B4DBB">${current+1} / ${PRIZES.length}</div>
-          <button id="next-prize" style="padding:8px 16px;background:${current===PRIZES.length-1?'#EDE0F8':'#7B2D9B'};color:${current===PRIZES.length-1?'#9B4DBB':'white'};border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;cursor:pointer;${current===PRIZES.length-1?'opacity:0.4':''}">→</button>
-        </div>
-
-        <div style="font-size:12px;color:#9B4DBB;margin-bottom:14px">Visitez tous les stands pour déclencher la roulette !</div>
-        <button id="close-prizes" style="width:100%;padding:12px;background:linear-gradient(135deg,#3A1050,#7B2D9B);color:white;border:none;border-radius:10px;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;cursor:pointer">Fermer</button>
+  overlay.style.cssText = `position:fixed;inset:0;background:#0D0015;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;opacity:0;transition:opacity .3s;padding:24px;overflow:auto`
+  overlay.innerHTML = `
+    <div style="width:100%;max-width:380px">
+      <div style="text-align:center;margin-bottom:24px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#9B4DBB;margin-bottom:6px">Complétez les ${STANDS.length} stands</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;color:white">Prix à gagner</div>
+        <div style="width:60px;height:2px;background:linear-gradient(90deg,transparent,#7B2D9B,transparent);margin:10px auto 0"></div>
       </div>
-    `
-    overlay.querySelector('#close-prizes').addEventListener('click', () => overlay.remove())
-    const prev = overlay.querySelector('#prev-prize')
-    const next = overlay.querySelector('#next-prize')
-    if(current > 0) prev.addEventListener('click', () => { current--; render() })
-    if(current < PRIZES.length-1) next.addEventListener('click', () => { current++; render() })
-  }
 
-  render()
+      ${PRIZES.map((p,i) => `
+        <div style="background:linear-gradient(135deg,#1A0028,#2A0040);border:1px solid #4A1A6A;border-radius:16px;padding:20px;margin-bottom:14px;display:flex;align-items:center;gap:16px;position:relative;overflow:hidden">
+          <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,rgba(123,45,155,0.15),transparent 70%);pointer-events:none"></div>
+          <div style="position:relative;width:90px;height:80px;flex-shrink:0;background:rgba(255,255,255,0.04);border-radius:10px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.08)">
+            <img src="${p.img}" style="max-width:80px;max-height:72px;object-fit:contain;border-radius:6px">
+          </div>
+          <div style="flex:1;position:relative">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:white;margin-bottom:4px">${p.name}</div>
+            <div style="display:inline-block;background:rgba(123,45,155,0.3);border:1px solid rgba(123,45,155,0.5);padding:3px 10px;border-radius:20px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:#C490DD;letter-spacing:1px;text-transform:uppercase">Tirage au sort</div>
+          </div>
+          <div style="position:absolute;top:8px;right:10px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:rgba(255,255,255,0.2);letter-spacing:1px">${Math.round(p.prob*100)}%</div>
+        </div>
+      `).join('')}
+
+      <div style="text-align:center;margin:16px 0;font-size:13px;color:rgba(255,255,255,0.4);font-style:italic">Visitez tous les stands pour déclencher la roulette</div>
+      <button onclick="this.closest('[style*=0D0015]').remove()" style="width:100%;padding:14px;background:linear-gradient(135deg,#5A1F78,#7B2D9B);color:white;border:none;border-radius:12px;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;cursor:pointer;letter-spacing:1px">Fermer</button>
+    </div>
+  `
   document.body.appendChild(overlay)
   requestAnimationFrame(() => overlay.style.opacity = '1')
 }
@@ -427,15 +456,12 @@ function showScanAnimation(brandName, visited, total, isComplete){
   })
 }
 
-// --- Roulette ---
+// --- Roulette style CS:GO ---
 async function checkAndShowRoulette(){
   const snap = await get(ref(db, 'companies/' + state.companyKey))
   if(!snap.exists()) return
   const data = snap.val()
-  if(data.prize) {
-    showPrizeResult(data.prize)
-    return
-  }
+  if(data.prize){ showPrizeResult(data.prize); return }
   showRoulette()
 }
 
@@ -448,45 +474,56 @@ function showRoulette(){
   }
   const prize = PRIZES[chosenIdx]
 
-  // Construire une longue liste qui se termine sur le bon prix
-  const totalItems = 30
+  // Construire la bande : 40 items, le gagnant atterrit à l'index 34
+  const TOTAL = 40
+  const WIN_IDX = 34
   const items = []
-  for(let i=0; i<totalItems; i++){
-    if(i === totalItems - 4) items.push(PRIZES[chosenIdx])
-    else items.push(PRIZES[i % PRIZES.length])
+  for(let i=0; i<TOTAL; i++){
+    if(i === WIN_IDX) items.push({...PRIZES[chosenIdx], isWinner: true})
+    else items.push({...PRIZES[i % PRIZES.length], isWinner: false})
   }
 
-  const overlay = document.createElement('div')
-  overlay.style.cssText = `position:fixed;inset:0;background:linear-gradient(135deg,#3A1050,#5A1F78);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:24px;opacity:0;transition:opacity .3s`
+  const itemW = 130
+  const visibleW = Math.min(window.innerWidth - 32, 380)
+  const startOffset = 0
+  const finalOffset = -(WIN_IDX * itemW - (visibleW/2 - itemW/2))
 
-  const itemW = 150
-  const visibleW = Math.min(window.innerWidth - 48, 360)
-  const centerOffset = Math.floor(visibleW / 2) - Math.floor(itemW / 2)
+  const overlay = document.createElement('div')
+  overlay.style.cssText = `position:fixed;inset:0;background:#0D0015;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:20px;opacity:0;transition:opacity .3s`
 
   overlay.innerHTML = `
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:rgba(255,255,255,0.6);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px">Félicitations !</div>
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:30px;font-weight:800;color:white;margin-bottom:4px;text-align:center">Vous avez tout visité !</div>
-    <div style="font-size:14px;color:rgba(255,255,255,0.6);margin-bottom:24px;text-align:center">Tentez votre chance</div>
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:#9B4DBB;letter-spacing:4px;text-transform:uppercase;margin-bottom:6px">Félicitations !</div>
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;color:white">Vous avez tout visité !</div>
+    </div>
 
     <div style="width:${visibleW}px;position:relative;margin-bottom:28px">
-      <div style="position:absolute;top:-14px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:16px solid white;z-index:4"></div>
-      <div style="position:absolute;bottom:-14px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-bottom:16px solid white;z-index:4"></div>
-      <div style="position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);width:${itemW}px;border:3px solid white;border-radius:4px;z-index:3;pointer-events:none"></div>
-      <div style="overflow:hidden;border-radius:16px;border:2px solid rgba(255,255,255,0.25)">
-        <div id="roulette-strip" style="display:flex;transform:translateX(${centerOffset}px)">
-          ${items.map(p => `
-            <div style="min-width:${itemW}px;height:130px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,0.08);border-right:1px solid rgba(255,255,255,0.1);gap:6px;padding:8px;flex-shrink:0">
-              <img src="${p.img}" style="width:76px;height:68px;object-fit:contain;border-radius:6px">
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:white;text-align:center;letter-spacing:.5px;text-transform:uppercase;line-height:1.2;padding:0 4px">${p.name}</div>
+      <div style="position:absolute;top:-16px;left:50%;transform:translateX(-50%);z-index:5">
+        <div style="width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-top:14px solid #FFD700"></div>
+      </div>
+      <div style="position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);z-index:5">
+        <div style="width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:14px solid #FFD700"></div>
+      </div>
+      <div style="position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);width:${itemW}px;border:2px solid #FFD700;border-radius:4px;z-index:4;pointer-events:none;box-shadow:0 0 20px rgba(255,215,0,0.3),inset 0 0 20px rgba(255,215,0,0.05)"></div>
+
+      <div style="overflow:hidden;border-radius:12px;border:1px solid #3A1060">
+        <div id="roulette-strip" style="display:flex;transform:translateX(${startOffset}px);will-change:transform">
+          ${items.map((p,i) => `
+            <div style="min-width:${itemW}px;height:140px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:${i%2===0?'#150020':'#1A0028'};border-right:1px solid #2A0040;gap:8px;padding:10px;flex-shrink:0;position:relative">
+              <div style="width:90px;height:80px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.06)">
+                <img src="${p.img}" style="max-width:82px;max-height:74px;object-fit:contain;border-radius:6px">
+              </div>
+              <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);text-align:center;letter-spacing:.5px;text-transform:uppercase;line-height:1.2">${p.name}</div>
             </div>
           `).join('')}
         </div>
       </div>
-      <div style="position:absolute;top:0;left:0;width:50px;height:100%;background:linear-gradient(to right,rgba(58,16,80,0.9),transparent);pointer-events:none;z-index:2"></div>
-      <div style="position:absolute;top:0;right:0;width:50px;height:100%;background:linear-gradient(to left,rgba(58,16,80,0.9),transparent);pointer-events:none;z-index:2"></div>
+
+      <div style="position:absolute;top:0;left:0;width:80px;height:100%;background:linear-gradient(to right,#0D0015,transparent);pointer-events:none;z-index:3;border-radius:12px 0 0 12px"></div>
+      <div style="position:absolute;top:0;right:0;width:80px;height:100%;background:linear-gradient(to left,#0D0015,transparent);pointer-events:none;z-index:3;border-radius:0 12px 12px 0"></div>
     </div>
 
-    <button id="btn-spin" style="padding:16px 48px;background:white;color:#3A1050;border:none;border-radius:12px;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;cursor:pointer;letter-spacing:1px;box-shadow:0 4px 20px rgba(0,0,0,0.3)">Lancer !</button>
+    <button id="btn-spin" style="padding:16px 52px;background:linear-gradient(135deg,#5A1F78,#9B4DBB);color:white;border:none;border-radius:12px;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;cursor:pointer;letter-spacing:1px;box-shadow:0 4px 24px rgba(123,45,155,0.5);transition:transform .1s">Lancer !</button>
   `
 
   document.body.appendChild(overlay)
@@ -495,53 +532,89 @@ function showRoulette(){
   overlay.querySelector('#btn-spin').addEventListener('click', () => {
     const btn = overlay.querySelector('#btn-spin')
     btn.disabled = true
-    btn.style.opacity = '0.4'
+    btn.style.transform = 'scale(0.95)'
+    btn.style.opacity = '0.5'
 
     const strip = overlay.querySelector('#roulette-strip')
-    const targetIdx = totalItems - 4
-    const finalOffset = centerOffset - (targetIdx * itemW)
 
-    // Animation en 3 phases
-    strip.style.transition = 'transform 0.5s cubic-bezier(.4,0,1,1)'
-    strip.style.transform = `translateX(${centerOffset - itemW * 4}px)`
+    // Ticks sonores pendant le défilement
+    let tickInterval = 60
+    let tickTimer = null
+    const startTicks = () => {
+      playTickSound()
+      tickTimer = setTimeout(startTicks, tickInterval)
+    }
+    startTicks()
 
+    // Phase 1 : départ rapide
+    strip.style.transition = 'transform 0.3s cubic-bezier(.4,0,1,1)'
+    strip.style.transform = `translateX(${-(itemW * 5)}px)`
+
+    // Phase 2 : vitesse max
     setTimeout(() => {
-      strip.style.transition = `transform 2s linear`
-      strip.style.transform = `translateX(${centerOffset - itemW * (totalItems - 8)}px)`
-    }, 500)
+      strip.style.transition = 'transform 2.2s linear'
+      strip.style.transform = `translateX(${-(itemW * (WIN_IDX - 8))}px)`
+      tickInterval = 80
+    }, 300)
 
+    // Phase 3 : décélération brutale style CS:GO
     setTimeout(() => {
-      strip.style.transition = `transform 2s cubic-bezier(0,.5,.3,1)`
+      strip.style.transition = 'transform 2.5s cubic-bezier(0,.95,.1,1)'
       strip.style.transform = `translateX(${finalOffset}px)`
+      tickInterval = 200
     }, 2500)
 
+    // Arrêt + vibration + son victoire
     setTimeout(() => {
-      overlay.style.opacity = '0'
+      clearTimeout(tickTimer)
+      if(navigator.vibrate) navigator.vibrate([100, 50, 100, 50, 300])
+      playWinSound()
+
+      // Flash doré sur la case gagnante
+      const winnerEl = strip.children[WIN_IDX]
+      if(winnerEl){
+        winnerEl.style.background = 'linear-gradient(135deg,#2A1A00,#3A2800)'
+        winnerEl.style.boxShadow = '0 0 30px rgba(255,215,0,0.4)'
+        winnerEl.style.transition = 'all .3s'
+      }
+
       setTimeout(() => {
-        overlay.remove()
-        update(ref(db, 'companies/' + state.companyKey), { prize: prize.name })
-        showPrizeResult(prize.name)
-      }, 400)
-    }, 5000)
+        overlay.style.opacity = '0'
+        setTimeout(() => {
+          overlay.remove()
+          update(ref(db, 'companies/' + state.companyKey), { prize: prize.name })
+          showPrizeResult(prize.name)
+        }, 400)
+      }, 1500)
+    }, 5200)
   })
 }
 
 function showPrizeResult(prizeName){
   const prize = PRIZES.find(p => p.name === prizeName) || { name: prizeName, img: '', color: '#7B2D9B' }
   const overlay = document.createElement('div')
-  overlay.style.cssText = `position:fixed;inset:0;background:linear-gradient(135deg,${prize.color},#3A1050);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:24px;opacity:0;transition:opacity .3s`
+  overlay.style.cssText = `position:fixed;inset:0;background:#0D0015;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:24px;opacity:0;transition:opacity .3s`
   overlay.innerHTML = `
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:rgba(255,255,255,0.6);letter-spacing:3px;text-transform:uppercase;margin-bottom:16px">Votre prix</div>
-    <img src="${prize.img}" style="width:180px;height:160px;object-fit:contain;border-radius:16px;margin-bottom:24px;box-shadow:0 8px 32px rgba(0,0,0,0.4);animation:popIn .5s cubic-bezier(.34,1.56,.64,1)">
-    <div style="font-family:'Barlow Condensed',sans-serif;font-size:34px;font-weight:800;color:white;text-align:center;margin-bottom:10px">${prize.name}</div>
-    <div style="font-size:14px;color:rgba(255,255,255,0.65);text-align:center;max-width:280px;margin-bottom:32px;line-height:1.6">Présentez cet écran à l'accueil pour récupérer votre cadeau !</div>
-    <button onclick="this.closest('[style*=fixed]').remove()" style="padding:14px 36px;background:white;color:#3A1050;border:none;border-radius:12px;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;cursor:pointer">Continuer</button>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:#9B4DBB;letter-spacing:4px;text-transform:uppercase;margin-bottom:16px">Votre prix</div>
+    <div style="position:relative;margin-bottom:24px">
+      <div style="position:absolute;inset:-20px;background:radial-gradient(ellipse,rgba(255,215,0,0.15),transparent 70%);pointer-events:none"></div>
+      <div style="width:200px;height:180px;background:linear-gradient(135deg,#1A0028,#2A0040);border:2px solid #FFD700;border-radius:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 40px rgba(255,215,0,0.3);animation:popIn .5s cubic-bezier(.34,1.56,.64,1)">
+        <img src="${prize.img}" style="max-width:170px;max-height:155px;object-fit:contain;border-radius:10px">
+      </div>
+    </div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;color:white;text-align:center;margin-bottom:8px">${prize.name}</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.5);text-align:center;max-width:260px;margin-bottom:32px;line-height:1.6">Présentez cet écran à l'accueil pour récupérer votre cadeau !</div>
+    <button onclick="this.closest('[style*=0D0015]').remove()" style="padding:14px 40px;background:linear-gradient(135deg,#5A1F78,#9B4DBB);color:white;border:none;border-radius:12px;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;cursor:pointer;letter-spacing:1px">Continuer</button>
   `
   document.body.appendChild(overlay)
   requestAnimationFrame(() => overlay.style.opacity = '1')
 }
 
 function extractStand(url){
+  if(url.includes('test-roulette')){
+    setTimeout(() => showRoulette(), 100)
+    return { name: '__test__', slug: 'test' }
+  }
   try {
     const u = new URL(url)
     const parts = u.pathname.split('/')
@@ -554,10 +627,6 @@ function extractStand(url){
     const slug = url.trim().toLowerCase()
     return STANDS.find(s => s.slug === slug) || null
   }
-  if(url.includes('test-roulette')){ 
-  setTimeout(() => showRoulette(), 100)
-  return { name: '__test__', slug: 'test' }
-}
   return null
 }
 
