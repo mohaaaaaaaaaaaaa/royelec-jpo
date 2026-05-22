@@ -335,6 +335,7 @@ document.getElementById('btn-prizes-preview').addEventListener('click', showPriz
 
 function showPrizesPreview(){
   const overlay = document.createElement('div')
+  overlay.className = 'casino-overlay'
   overlay.style.cssText = `position:fixed;inset:0;background:#0D0015;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;opacity:0;transition:opacity .3s;padding:24px;overflow:auto`
   overlay.innerHTML = `
     <div style="width:100%;max-width:380px">
@@ -359,7 +360,7 @@ function showPrizesPreview(){
       `).join('')}
 
       <div style="text-align:center;margin:16px 0;font-size:13px;color:rgba(255,255,255,0.4);font-style:italic">Visitez tous les stands pour déclencher la roulette</div>
-      <button onclick="this.closest('[style*=0D0015]').remove()" style="width:100%;padding:14px;background:linear-gradient(135deg,#5A1F78,#7B2D9B);color:white;border:none;border-radius:12px;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;cursor:pointer;letter-spacing:1px">Fermer</button>
+      <button onclick="document.querySelectorAll('.casino-overlay').forEach(e=>e.remove())" style="width:100%;padding:14px;background:linear-gradient(135deg,#5A1F78,#7B2D9B);color:white;border:none;border-radius:12px;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;cursor:pointer;letter-spacing:1px">Fermer</button>
     </div>
   `
   document.body.appendChild(overlay)
@@ -458,6 +459,7 @@ function showScanAnimation(brandName, visited, total, isComplete){
 
 // --- Roulette style CS:GO ---
 async function checkAndShowRoulette(){
+  document.querySelectorAll('.casino-overlay').forEach(el => el.remove())
   const snap = await get(ref(db, 'companies/' + state.companyKey))
   if(!snap.exists()) return
   const data = snap.val()
@@ -466,6 +468,7 @@ async function checkAndShowRoulette(){
 }
 
 function showRoulette(){
+  document.querySelectorAll('.casino-overlay').forEach(el => el.remove())
   const rand = Math.random()
   let cumul = 0, chosenIdx = 0
   for(let i=0; i<PRIZES.length; i++){
@@ -476,19 +479,20 @@ function showRoulette(){
 
   // Construire la bande : 40 items, le gagnant atterrit à l'index 34
   const TOTAL = 40
-  const WIN_IDX = 34
+  const WIN_IDX = 32
+  const itemW = 160
   const items = []
   for(let i=0; i<TOTAL; i++){
     if(i === WIN_IDX) items.push({...PRIZES[chosenIdx], isWinner: true})
     else items.push({...PRIZES[i % PRIZES.length], isWinner: false})
   }
 
-  const itemW = 130
   const visibleW = Math.min(window.innerWidth - 32, 380)
-  const startOffset = 0
-  const finalOffset = -(WIN_IDX * itemW - (visibleW/2 - itemW/2))
+  const startOffset = visibleW/2 - itemW/2
+  const finalOffset = startOffset - (WIN_IDX * itemW)
 
   const overlay = document.createElement('div')
+  overlay.className = 'casino-overlay'
   overlay.style.cssText = `position:fixed;inset:0;background:#0D0015;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:20px;opacity:0;transition:opacity .3s`
 
   overlay.innerHTML = `
@@ -504,16 +508,13 @@ function showRoulette(){
       <div style="position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);z-index:5">
         <div style="width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:14px solid #FFD700"></div>
       </div>
-      <div style="position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);width:${itemW}px;border:2px solid #FFD700;border-radius:4px;z-index:4;pointer-events:none;box-shadow:0 0 20px rgba(255,215,0,0.3),inset 0 0 20px rgba(255,215,0,0.05)"></div>
+      <div style="position:absolute;top:0;bottom:0;left:calc(50% - ${itemW/2}px);width:${itemW}px;border:2px solid #FFD700;border-radius:4px;z-index:4;pointer-events:none;box-shadow:0 0 20px rgba(255,215,0,0.3)"></div>
 
       <div style="overflow:hidden;border-radius:12px;border:1px solid #3A1060">
-        <div id="roulette-strip" style="display:flex;transform:translateX(${startOffset}px);will-change:transform">
+        <div id="roulette-strip" style="display:flex;transform:translateX(${startOffset}px);will-change:transform;transition:none">
           ${items.map((p,i) => `
-            <div style="min-width:${itemW}px;height:140px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:${i%2===0?'#150020':'#1A0028'};border-right:1px solid #2A0040;gap:8px;padding:10px;flex-shrink:0;position:relative">
-              <div style="width:90px;height:80px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.06)">
-                <img src="${p.img}" style="max-width:82px;max-height:74px;object-fit:contain;border-radius:6px">
-              </div>
-              <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);text-align:center;letter-spacing:.5px;text-transform:uppercase;line-height:1.2">${p.name}</div>
+            <div style="min-width:${itemW}px;height:${itemW}px;display:flex;align-items:center;justify-content:center;background:${i%2===0?'#150020':'#1A0028'};border-right:1px solid #2A0040;flex-shrink:0">
+             <img src="${p.img}" style="max-width:${itemW-20}px;max-height:${itemW-20}px;object-fit:contain;border-radius:6px">
             </div>
           `).join('')}
         </div>
@@ -548,12 +549,12 @@ function showRoulette(){
 
     // Phase 1 : départ rapide
     strip.style.transition = 'transform 0.3s cubic-bezier(.4,0,1,1)'
-    strip.style.transform = `translateX(${-(itemW * 5)}px)`
+    strip.style.transform = `translateX(${startOffset - itemW * 5}px)`
 
     // Phase 2 : vitesse max
     setTimeout(() => {
       strip.style.transition = 'transform 2.2s linear'
-      strip.style.transform = `translateX(${-(itemW * (WIN_IDX - 8))}px)`
+      strip.style.transform = `translateX(${startOffset - itemW * (WIN_IDX - 8)}px)`
       tickInterval = 80
     }, 300)
 
@@ -593,6 +594,7 @@ function showRoulette(){
 function showPrizeResult(prizeName){
   const prize = PRIZES.find(p => p.name === prizeName) || { name: prizeName, img: '', color: '#7B2D9B' }
   const overlay = document.createElement('div')
+  overlay.className = 'casino-overlay'
   overlay.style.cssText = `position:fixed;inset:0;background:#0D0015;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:24px;opacity:0;transition:opacity .3s`
   overlay.innerHTML = `
     <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:#9B4DBB;letter-spacing:4px;text-transform:uppercase;margin-bottom:16px">Votre prix</div>
@@ -604,7 +606,7 @@ function showPrizeResult(prizeName){
     </div>
     <div style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;color:white;text-align:center;margin-bottom:8px">${prize.name}</div>
     <div style="font-size:13px;color:rgba(255,255,255,0.5);text-align:center;max-width:260px;margin-bottom:32px;line-height:1.6">Présentez cet écran à l'accueil pour récupérer votre cadeau !</div>
-    <button onclick="this.closest('[style*=0D0015]').remove()" style="padding:14px 40px;background:linear-gradient(135deg,#5A1F78,#9B4DBB);color:white;border:none;border-radius:12px;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;cursor:pointer;letter-spacing:1px">Continuer</button>
+    <button onclick="document.querySelectorAll('.casino-overlay').forEach(e=>e.remove())" style="padding:14px 40px;background:linear-gradient(135deg,#5A1F78,#9B4DBB);color:white;border:none;border-radius:12px;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;cursor:pointer;letter-spacing:1px">Continuer</button>
   `
   document.body.appendChild(overlay)
   requestAnimationFrame(() => overlay.style.opacity = '1')
