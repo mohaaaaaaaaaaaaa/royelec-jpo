@@ -2,7 +2,6 @@ import './style.css'
 
 const STANDS = [
   { name: 'Airwell',        slug: 'airwell',        logo: 'airwell.png',        url: 'https://www.airwell.com' },
-  { name: 'Roger Pradier',  slug: 'roger-pradier',  logo: 'roger-pradier.svg',  url: 'https://www.roger-pradier.com' },
   { name: 'Soler-Palau',    slug: 'soler-palau',    logo: 'soler-palau.svg',    url: 'https://www.solerpalau.com/' },
   { name: 'Came France',    slug: 'came-france',    logo: 'came-france.png',    url: 'https://www.came.com/fr' },
   { name: 'Ledvance',       slug: 'ledvance',       logo: 'ledvance.svg',       url: 'https://www.ledvance.fr' },
