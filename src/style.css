@@ -80,7 +80,7 @@ html,body{height:100%;background:var(--white);color:var(--text);font-family:'Bar
 .chip.done .chip-name{color:rgba(255,255,255,0.85)}
 .chip-name-fallback{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
 .chip.un .chip-name-fallback{color:var(--v4)}
-.chip.done .chip-name-fallback{color:white}
+.chip.done .chip-name-fallback{color:#EDE0F8}
 .chip-check{position:absolute;top:5px;right:7px;font-size:10px;color:rgba(255,255,255,0.9);font-weight:800;animation:popIn .3s cubic-bezier(.34,1.56,.64,1)}
 @keyframes popIn{from{transform:scale(0)}to{transform:scale(1)}}
 
