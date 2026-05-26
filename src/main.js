@@ -875,6 +875,15 @@ function renderApp(){
 
   function extractStand(url){
     if(url.includes('test-roulette')){ setTimeout(() => showRoulette(), 100); return { name: '__test__', slug: 'test' } }
+   if(url.includes('test-all-stands')){ 
+     state.visited = STANDS.map(s => s.name)
+      update(ref(db, 'companies/' + state.companyKey), { stands: state.visited, score: STANDS.length, name: state.company })
+     stopScanner()
+     updateProg()
+     show('s-progression')
+      setTimeout(() => checkAndShowRoulette(), 500)
+     return { name: '__test__', slug: 'test' }
+    } 
     try {
       const u = new URL(url)
       const parts = u.pathname.split('/')

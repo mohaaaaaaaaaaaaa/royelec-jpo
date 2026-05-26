@@ -66,18 +66,20 @@ html,body{height:100%;background:var(--white);color:var(--text);font-family:'Bar
 .stands-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px}
 .chip{padding:12px 8px 10px;border-radius:14px;text-align:center;border:1.5px solid;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative;transition:all .3s cubic-bezier(.34,1.56,.64,1);cursor:default}
 .chip.un{background:white;border-color:#EDE0F8;box-shadow:0 2px 8px rgba(90,31,120,0.08)}
-.chip.done{background:linear-gradient(135deg,var(--v1),var(--v3));border-color:var(--v2);box-shadow:0 4px 16px rgba(90,31,120,0.35)}
+.chip.done{background:white;border-color:var(--v2);border-width:2.5px;box-shadow:0 4px 16px rgba(90,31,120,0.35)}
+.chip.done .chip-name{color:var(--v1) !important}
+.chip.done .chip-check{color:var(--v2) !important}
 .chip:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(90,31,120,0.18)}
 .chip.done:hover{box-shadow:0 8px 24px rgba(90,31,120,0.45)}
 .chip-logo-wrap{width:100%;height:38px;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .chip-logo{max-width:85%;max-height:36px;width:auto;height:auto;object-fit:contain;display:block;transition:filter .3s}
-.chip.un .chip-logo{opacity:1;filter:none}
-.chip.done .chip-logo{filter:brightness(0) invert(1)}
+.chip.un .chip-logo{filter:grayscale(100%) opacity(0.4)}
+.chip.done .chip-logo{filter:none;opacity:1}
 .chip-name{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;line-height:1.1}
-.chip.un .chip-name{color:var(--v2)}
+.chip.un .chip-name{color:var(--v4)}
 .chip.done .chip-name{color:rgba(255,255,255,0.85)}
 .chip-name-fallback{font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
-.chip.un .chip-name-fallback{color:var(--v2)}
+.chip.un .chip-name-fallback{color:var(--v4)}
 .chip.done .chip-name-fallback{color:white}
 .chip-check{position:absolute;top:5px;right:7px;font-size:10px;color:rgba(255,255,255,0.9);font-weight:800;animation:popIn .3s cubic-bezier(.34,1.56,.64,1)}
 @keyframes popIn{from{transform:scale(0)}to{transform:scale(1)}}
