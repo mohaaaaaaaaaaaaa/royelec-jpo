@@ -561,13 +561,13 @@ function renderApp(){
   // --- Progression ---
   function updateProg(){
     const v = state.visited.length, t = STANDS.length
-    const pct = Math.round(v/t*100)
+    const pct = Math.min(100, Math.round(v/t*100))
     document.getElementById('p-avatar').textContent = state.company.charAt(0).toUpperCase()
     document.getElementById('p-name').textContent = state.company
     document.getElementById('p-sub').textContent = v + ' stand' + (v>1?'s':'') + ' visité' + (v>1?'s':'')
     document.getElementById('circ-pct').textContent = pct + '%'
     document.getElementById('s-visited').textContent = v
-    document.getElementById('s-remaining').textContent = t - v
+    document.getElementById('s-remaining').textContent = Math.max(0, t - v)
     document.getElementById('circ').style.strokeDashoffset = 264 - (264 * pct / 100)
 
     // Masquer le countdown si tout est visité
