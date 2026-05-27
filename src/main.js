@@ -29,10 +29,10 @@ const STANDS = [
 ]
 
 const PRIZES_DEFAULT = [
-  { name: 'Casquette Milwaukee', img: '/casquette.png',          stock: 10 },
-  { name: 'Mug Feilo Sylvania',  img: '/mug.png',                stock: 10 },
-  { name: 'Gourde Hager',        img: '/gourde.png',             stock: 10 },
-  { name: 'Casquette Sylvania',  img: '/casquette-sylvania.png', stock: 10 },
+  { name: 'Casquette Milwaukee', img: '/casquette.png',          stock: 10, prob: 25 },
+  { name: 'Mug Feilo Sylvania',  img: '/mug.png',                stock: 10, prob: 25 },
+  { name: 'Gourde Hager',        img: '/gourde.png',             stock: 10, prob: 25 },
+  { name: 'Casquette Sylvania',  img: '/casquette-sylvania.png', stock: 10, prob: 25 },
 ]
 
 
@@ -77,9 +77,34 @@ function renderAdmin(){
       <button id="admin-login-btn" style="padding:14px;background:linear-gradient(135deg,#5A1F78,#9B4DBB);color:white;border:none;border-radius:10px;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;cursor:pointer;width:100%;max-width:300px">Connexion</button>
       <div id="admin-error" style="color:#ff6b6b;margin-top:10px;font-size:14px;display:none">Mot de passe incorrect</div>
     </div>
-    <div id="admin-panel" style="display:none;padding:24px;max-width:600px;margin:0 auto">
+    <div id="admin-panel" style="display:none;padding:24px;max-width:640px;margin:0 auto;padding-bottom:60px">
       <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;margin-bottom:24px;text-align:center">Panneau Admin</div>
 
+      <!-- STATISTIQUES -->
+      <div style="background:#1A0028;border:1px solid #3A1060;border-radius:16px;padding:20px;margin-bottom:16px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#9B4DBB;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">Bilan de la journée</div>
+        <div id="admin-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+          <div style="background:#0D0015;border-radius:10px;padding:14px;text-align:center">
+            <div id="stat-total" style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;color:white">—</div>
+            <div style="font-size:12px;color:#9B4DBB;margin-top:2px">Participants</div>
+          </div>
+          <div style="background:#0D0015;border-radius:10px;padding:14px;text-align:center">
+            <div id="stat-finished" style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;color:#FFD700">—</div>
+            <div style="font-size:12px;color:#9B4DBB;margin-top:2px">Parcours terminés</div>
+          </div>
+          <div style="background:#0D0015;border-radius:10px;padding:14px;text-align:center">
+            <div id="stat-avgtime" style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;color:white">—</div>
+            <div style="font-size:12px;color:#9B4DBB;margin-top:2px">Temps moyen</div>
+          </div>
+          <div style="background:#0D0015;border-radius:10px;padding:14px;text-align:center">
+            <div id="stat-prizes" style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;color:#C490DD">—</div>
+            <div style="font-size:12px;color:#9B4DBB;margin-top:2px">Prix distribués</div>
+          </div>
+        </div>
+        <div id="admin-participants" style="font-size:14px;color:rgba(255,255,255,0.7)">Chargement...</div>
+      </div>
+
+      <!-- HEURE -->
       <div style="background:#1A0028;border:1px solid #3A1060;border-radius:16px;padding:20px;margin-bottom:16px">
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#9B4DBB;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">Heure de remise des prix</div>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -90,37 +115,56 @@ function renderAdmin(){
         <div id="admin-time-status" style="font-size:13px;color:#9B4DBB;margin-top:8px"></div>
       </div>
 
+      <!-- PRIX -->
       <div style="background:#1A0028;border:1px solid #3A1060;border-radius:16px;padding:20px;margin-bottom:16px">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#9B4DBB;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">Stock des prix</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#9B4DBB;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Gestion des prix</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px">Les % sont fixes — le stock indique quand le prix est épuisé</div>
         <div id="admin-prizes"></div>
-        <button id="admin-save-prizes" style="margin-top:12px;padding:12px 24px;background:#5A1F78;color:white;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;width:100%">Sauvegarder le stock</button>
-        <div id="admin-prizes-status" style="font-size:13px;color:#9B4DBB;margin-top:8px"></div>
+        <button id="admin-save-prizes" style="margin-top:12px;padding:12px 24px;background:#5A1F78;color:white;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;width:100%">Sauvegarder les prix</button>
+        <div id="admin-prizes-status" style="font-size:13px;color:#9B4DBB;margin-top:8px;text-align:center"></div>
+
+        <!-- Ajouter un prix -->
+        <div style="margin-top:20px;padding-top:16px;border-top:1px solid #2A0040">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:rgba(255,255,255,0.6);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">Ajouter un prix</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <input id="new-prize-name" placeholder="Nom du prix" style="padding:10px;border-radius:8px;border:1px solid #4A1A6A;background:#0D0015;color:white;font-size:14px;outline:none">
+            <input id="new-prize-img" placeholder="Nom du fichier image (ex: gourde.png)" style="padding:10px;border-radius:8px;border:1px solid #4A1A6A;background:#0D0015;color:white;font-size:14px;outline:none">
+            <div style="display:flex;gap:8px">
+              <div style="flex:1">
+                <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px">Stock</div>
+                <input id="new-prize-stock" type="number" min="0" value="10" style="width:100%;padding:10px;border-radius:8px;border:1px solid #4A1A6A;background:#0D0015;color:white;font-size:14px;text-align:center;outline:none">
+              </div>
+              <div style="flex:1">
+                <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px">Chances (%)</div>
+                <input id="new-prize-prob" type="number" min="1" max="100" value="25" style="width:100%;padding:10px;border-radius:8px;border:1px solid #4A1A6A;background:#0D0015;color:white;font-size:14px;text-align:center;outline:none">
+              </div>
+            </div>
+            <button id="admin-add-prize" style="padding:12px;background:linear-gradient(135deg,#3A1050,#5A1F78);color:white;border:1px solid #7B2D9B;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer">Ajouter ce prix</button>
+          </div>
+          <div id="admin-add-status" style="font-size:13px;color:#9B4DBB;margin-top:8px;text-align:center"></div>
+        </div>
       </div>
 
+      <!-- BONUS PODIUM -->
       <div style="background:#1A0028;border:1px solid #3A1060;border-radius:16px;padding:20px;margin-bottom:16px">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#9B4DBB;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px">Bonus podium (chances en %)</div>
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#9B4DBB;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Bonus podium</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px">% de chances supplémentaires sur le meilleur prix disponible</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
           <div style="text-align:center">
             <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:6px">1er</div>
-            <input id="bonus-1" type="number" min="0" max="100" value="30" style="width:100%;padding:10px;border-radius:8px;border:1px solid #4A1A6A;background:#0D0015;color:white;font-size:16px;text-align:center">
+            <input id="bonus-1" type="number" min="0" max="100" value="30" style="width:100%;padding:10px;border-radius:8px;border:1px solid #4A1A6A;background:#0D0015;color:white;font-size:16px;text-align:center;outline:none">
           </div>
           <div style="text-align:center">
             <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:6px">2e</div>
-            <input id="bonus-2" type="number" min="0" max="100" value="20" style="width:100%;padding:10px;border-radius:8px;border:1px solid #4A1A6A;background:#0D0015;color:white;font-size:16px;text-align:center">
+            <input id="bonus-2" type="number" min="0" max="100" value="20" style="width:100%;padding:10px;border-radius:8px;border:1px solid #4A1A6A;background:#0D0015;color:white;font-size:16px;text-align:center;outline:none">
           </div>
           <div style="text-align:center">
             <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:6px">3e</div>
-            <input id="bonus-3" type="number" min="0" max="100" value="10" style="width:100%;padding:10px;border-radius:8px;border:1px solid #4A1A6A;background:#0D0015;color:white;font-size:16px;text-align:center">
+            <input id="bonus-3" type="number" min="0" max="100" value="10" style="width:100%;padding:10px;border-radius:8px;border:1px solid #4A1A6A;background:#0D0015;color:white;font-size:16px;text-align:center;outline:none">
           </div>
         </div>
-        <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:8px">% de chances bonus pour le meilleur prix du podium</div>
         <button id="admin-save-bonus" style="margin-top:12px;padding:12px 24px;background:#5A1F78;color:white;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;width:100%">Sauvegarder les bonus</button>
-        <div id="admin-bonus-status" style="font-size:13px;color:#9B4DBB;margin-top:8px"></div>
-      </div>
-
-      <div style="background:#1A0028;border:1px solid #3A1060;border-radius:16px;padding:20px">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#9B4DBB;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px">Participants</div>
-        <div id="admin-participants" style="font-size:14px;color:rgba(255,255,255,0.7)">Chargement...</div>
+        <div id="admin-bonus-status" style="font-size:13px;color:#9B4DBB;margin-top:8px;text-align:center"></div>
       </div>
     </div>
   </div>
@@ -141,8 +185,40 @@ function renderAdmin(){
   })
 }
 
+function renderPrizesAdmin(prizes){
+  document.getElementById('admin-prizes').innerHTML = prizes.map((p,i) => `
+    <div style="background:#0D0015;border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid #2A0040">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <img src="${p.img}" style="width:48px;height:42px;object-fit:contain;border-radius:6px;background:#1A0028">
+        <div style="flex:1;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:white">${p.name}</div>
+        <button onclick="deletePrize(${i})" style="background:rgba(255,50,50,0.15);border:1px solid rgba(255,50,50,0.3);color:#ff6b6b;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700">Supprimer</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px">Stock restant</div>
+          <input id="stock-${i}" type="number" min="0" value="${p.stock||0}" style="width:100%;padding:8px;border-radius:8px;border:1px solid #4A1A6A;background:#1A0028;color:white;font-size:16px;font-weight:700;text-align:center;outline:none">
+        </div>
+        <div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px">Chances (%)</div>
+          <input id="prob-${i}" type="number" min="1" max="100" value="${p.prob||25}" style="width:100%;padding:8px;border-radius:8px;border:1px solid #4A1A6A;background:#1A0028;color:white;font-size:16px;font-weight:700;text-align:center;outline:none">
+        </div>
+      </div>
+    </div>
+  `).join('')
+}
+
+let adminPrizes = []
+
+window.deletePrize = async function(idx){
+  if(!confirm('Supprimer ce prix ?')) return
+  adminPrizes.splice(idx, 1)
+  renderPrizesAdmin(adminPrizes)
+  await update(ref(db,'config'), { prizes: adminPrizes })
+  document.getElementById('admin-prizes-status').textContent = 'Prix supprimé !'
+  setTimeout(() => document.getElementById('admin-prizes-status').textContent = '', 2000)
+}
+
 async function loadAdminData(){
-  // Charger config
   const configSnap = await get(ref(db, 'config'))
   const config = configSnap.exists() ? configSnap.val() : {}
 
@@ -160,18 +236,9 @@ async function loadAdminData(){
     document.getElementById('bonus-3').value = config.bonus[3] || 10
   }
 
-  // Prizes
-  const prizes = config.prizes || PRIZES_DEFAULT
-  document.getElementById('admin-prizes').innerHTML = prizes.map((p,i) => `
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;background:#0D0015;border-radius:10px;padding:12px">
-      <img src="${p.img}" style="width:50px;height:44px;object-fit:contain">
-      <div style="flex:1">
-        <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:white">${p.name}</div>
-        <div style="font-size:12px;color:#9B4DBB">Stock restant</div>
-      </div>
-      <input id="stock-${i}" type="number" min="0" value="${p.stock}" style="width:70px;padding:8px;border-radius:8px;border:1px solid #4A1A6A;background:#1A0028;color:white;font-size:18px;font-weight:700;text-align:center">
-    </div>
-  `).join('')
+  // Prix
+  adminPrizes = config.prizes ? config.prizes.map(p => ({...p, prob: p.prob||25})) : PRIZES_DEFAULT.map(p => ({...p}))
+  renderPrizesAdmin(adminPrizes)
 
   // Sauvegarder heure
   document.getElementById('admin-save-time').addEventListener('click', async () => {
@@ -183,15 +250,35 @@ async function loadAdminData(){
     setTimeout(() => document.getElementById('admin-time-status').textContent = '', 2000)
   })
 
-  // Sauvegarder stock
+  // Sauvegarder prix
   document.getElementById('admin-save-prizes').addEventListener('click', async () => {
-    const updatedPrizes = prizes.map((p,i) => ({
+    const updated = adminPrizes.map((p,i) => ({
       ...p,
-      stock: parseInt(document.getElementById(`stock-${i}`).value) || 0
+      stock: parseInt(document.getElementById(`stock-${i}`).value) || 0,
+      prob: parseInt(document.getElementById(`prob-${i}`).value) || 25,
     }))
-    await update(ref(db,'config'), { prizes: updatedPrizes })
-    document.getElementById('admin-prizes-status').textContent = 'Stock sauvegardé !'
+    adminPrizes = updated
+    await update(ref(db,'config'), { prizes: updated })
+    document.getElementById('admin-prizes-status').textContent = 'Prix sauvegardés !'
     setTimeout(() => document.getElementById('admin-prizes-status').textContent = '', 2000)
+  })
+
+  // Ajouter un prix
+  document.getElementById('admin-add-prize').addEventListener('click', async () => {
+    const name = document.getElementById('new-prize-name').value.trim()
+    const img = document.getElementById('new-prize-img').value.trim()
+    const stock = parseInt(document.getElementById('new-prize-stock').value) || 10
+    const prob = parseInt(document.getElementById('new-prize-prob').value) || 25
+    if(!name || !img){ document.getElementById('admin-add-status').textContent = 'Nom et image requis'; return }
+    adminPrizes.push({ name, img: '/' + img.replace(/^\//,''), stock, prob })
+    renderPrizesAdmin(adminPrizes)
+    await update(ref(db,'config'), { prizes: adminPrizes })
+    document.getElementById('new-prize-name').value = ''
+    document.getElementById('new-prize-img').value = ''
+    document.getElementById('new-prize-stock').value = '10'
+    document.getElementById('new-prize-prob').value = '25'
+    document.getElementById('admin-add-status').textContent = 'Prix ajouté !'
+    setTimeout(() => document.getElementById('admin-add-status').textContent = '', 2000)
   })
 
   // Sauvegarder bonus
@@ -206,23 +293,61 @@ async function loadAdminData(){
     setTimeout(() => document.getElementById('admin-bonus-status').textContent = '', 2000)
   })
 
-  // Participants en temps réel
+  // Stats + participants en temps réel
   onValue(ref(db,'companies'), snap => {
-    if(!snap.exists()){ document.getElementById('admin-participants').textContent = 'Aucun participant'; return }
-    const all = Object.values(snap.val()).sort((a,b) => (b.score||0)-(a.score||0))
+    if(!snap.exists()){
+      document.getElementById('stat-total').textContent = '0'
+      document.getElementById('stat-finished').textContent = '0'
+      document.getElementById('stat-avgtime').textContent = '—'
+      document.getElementById('stat-prizes').textContent = '0'
+      document.getElementById('admin-participants').textContent = 'Aucun participant'
+      return
+    }
+    const all = Object.values(snap.val()).sort((a,b) => {
+      if((b.score||0) !== (a.score||0)) return (b.score||0) - (a.score||0)
+      return (a.finishTime||Infinity) - (b.finishTime||Infinity)
+    })
+    const finished = all.filter(c => c.finishTime)
+    const withPrize = all.filter(c => c.prize)
+
+    // Temps moyen des gens qui ont fini
+    let avgTime = '—'
+    if(finished.length > 0){
+      const avgMs = finished.reduce((s,c) => s + ((c.finishTime||0) - (c.startTime||0)), 0) / finished.length
+      const m = Math.floor(avgMs/60000)
+      const s = Math.floor((avgMs%60000)/1000)
+      avgTime = m + 'min ' + s + 's'
+    }
+
+    document.getElementById('stat-total').textContent = all.length
+    document.getElementById('stat-finished').textContent = finished.length
+    document.getElementById('stat-avgtime').textContent = avgTime
+    document.getElementById('stat-prizes').textContent = withPrize.length
+
     document.getElementById('admin-participants').innerHTML = `
-      <div style="margin-bottom:8px;font-size:13px;color:rgba(255,255,255,0.5)">${all.length} entreprise(s) inscrite(s)</div>
-      ${all.map((c,i) => `
-        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #2A0040">
-          <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:rgba(255,255,255,0.4);width:24px">${i+1}</div>
-          <div style="flex:1;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:white">${c.name}</div>
-          <div style="font-size:13px;color:#9B4DBB">${c.score||0}/${STANDS.length}</div>
-          ${c.prize ? `<div style="font-size:11px;color:#FFD700;font-weight:700">${c.prize}</div>` : ''}
-        </div>
-      `).join('')}
+      <div style="margin-bottom:10px;font-size:12px;color:rgba(255,255,255,0.4);letter-spacing:1px;text-transform:uppercase;font-family:'Barlow Condensed',sans-serif">Liste des participants</div>
+      ${all.map((c,i) => {
+        const duration = c.finishTime && c.startTime ? (() => {
+          const ms = c.finishTime - c.startTime
+          return Math.floor(ms/60000) + 'min ' + Math.floor((ms%60000)/1000) + 's'
+        })() : null
+        return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #2A0040">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;color:rgba(255,255,255,0.3);width:24px;text-align:center">${i+1}</div>
+          <div style="flex:1">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:white">${c.name}</div>
+            ${duration ? `<div style="font-size:11px;color:rgba(255,255,255,0.4)">${duration}</div>` : ''}
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:13px;color:#9B4DBB;font-weight:700">${c.score||0}/${STANDS.length}</div>
+            ${c.finishTime ? '<div style="font-size:10px;color:#FFD700">Terminé</div>' : ''}
+          </div>
+          ${c.prize ? `<div style="font-size:11px;color:#FFD700;font-weight:700;max-width:80px;text-align:right;line-height:1.2">${c.prize}</div>` : ''}
+        </div>`
+      }).join('')}
     `
   })
 }
+
 
 // ==========================================
 // TV
@@ -470,33 +595,30 @@ function renderApp(){
   async function computeProbabilities(){
     const configSnap = await get(ref(db,'config'))
     const config = configSnap.exists() ? configSnap.val() : {}
-    const prizes = config.prizes || PRIZES_DEFAULT
+    const prizes = (config.prizes || PRIZES_DEFAULT).filter(p => (p.stock||0) > 0)
     const bonus = config.bonus || {}
+    if(prizes.length === 0) return []
 
-    // Stock total
-    const totalStock = prizes.reduce((s,p) => s + (p.stock||0), 0)
-    if(totalStock === 0) return []
+    // Utiliser les % fixes définis dans l'admin
+    // Normaliser pour que la somme fasse 100
+    const totalProb = prizes.reduce((s,p) => s + (p.prob||25), 0)
+    let probs = prizes.map(p => ({ ...p, probNorm: (p.prob||25) / totalProb }))
 
-    // Probabilités de base proportionnelles au stock
-    let probs = prizes.map(p => ({ ...p, prob: (p.stock||0) / totalStock }))
-
-    // Appliquer bonus podium si l'utilisateur est dans le top 3
+    // Appliquer bonus podium sur le prix avec le plus grand %
     if(state.rank && state.rank <= 3){
       const bonusPct = (bonus[state.rank] || 0) / 100
-      if(bonusPct > 0 && probs.length > 0){
-        // Trouver le meilleur prix (premier de la liste)
-        const maxStockIdx = probs.reduce((best,p,i) => p.stock > probs[best].stock ? i : best, 0)
-        probs = probs.map((p,i) => {
-          if(i === maxStockIdx) return { ...p, prob: Math.min(1, p.prob + bonusPct) }
-          return p
-        })
-        // Renormaliser
-        const total = probs.reduce((s,p) => s + p.prob, 0)
-        probs = probs.map(p => ({ ...p, prob: p.prob / total }))
+      if(bonusPct > 0){
+        const maxIdx = probs.reduce((best,p,i) => p.probNorm > probs[best].probNorm ? i : best, 0)
+        probs = probs.map((p,i) => ({
+          ...p, probNorm: i === maxIdx ? Math.min(1, p.probNorm + bonusPct) : p.probNorm
+        }))
+        const total = probs.reduce((s,p) => s + p.probNorm, 0)
+        probs = probs.map(p => ({ ...p, probNorm: p.probNorm / total }))
       }
     }
 
-    return probs.filter(p => p.stock > 0)
+    // Renommer probNorm en prob pour le tirage
+    return probs.map(p => ({ ...p, prob: p.probNorm }))
   }
 
   // Sons
@@ -566,7 +688,7 @@ function renderApp(){
     document.getElementById('p-name').textContent = state.company
     document.getElementById('p-sub').textContent = v + ' stand' + (v>1?'s':'') + ' visité' + (v>1?'s':'')
     document.getElementById('circ-pct').textContent = pct + '%'
-    document.getElementById('s-visited').textContent = v
+    document.getElementById('s-visited').textContent = v 
     document.getElementById('s-remaining').textContent = Math.max(0, t - v)
     document.getElementById('circ').style.strokeDashoffset = 264 - (264 * pct / 100)
 
