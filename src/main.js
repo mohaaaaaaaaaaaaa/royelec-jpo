@@ -16,24 +16,34 @@ const STANDS = [
   { name: 'Courant',        slug: 'courant',        logo: 'courant.png',        url: 'https://www.courant.fr' },
   { name: 'Indigo Lighting',slug: 'indigo-lighting',logo: 'indigo-lighting.png',url: 'https://www.indigo-lighting.com' },
   { name: 'Gewiss France',  slug: 'gewiss-france',  logo: 'gewiss-france.jpg',  url: 'https://www.gewiss.com/fr/fr/' },
-  { name: 'Feilo Sylvania', slug: 'feilo-sylvania', logo: 'feilo-sylvania.png',url: 'https://www.sylvania-group.com/fr-fr/' },
+  { name: 'Feilo Sylvania', slug: 'feilo-sylvania', logo: 'Sylvania.png',url: 'https://www.sylvania-group.com/fr-fr/' },
   { name: 'Engitechs',      slug: 'engitechs',      logo: 'engitechs.svg',      url: 'https://www.engitechs.com' },
   { name: 'Theben',         slug: 'theben',         logo: 'theben.svg',         url: 'https://www.theben.fr' },
   { name: 'Airzone France', slug: 'airzone-france', logo: 'airzone-france.svg', url: 'https://www.airzonecontrol.com/ff/fr/' },
   { name: 'Aiphone',        slug: 'aiphone',        logo: 'aiphone.png',        url: 'https://www.aiphone.fr' },
-  { name: 'Somfy-BFT',      slug: 'somfy-bft',      logo: 'somfy-bft.svg',      url: 'https://www.somfy.fr' },
+  { name: 'Somfy-BFT',      slug: 'somfy-bft',      logo: 'somfy.png',      url: 'https://www.somfy.fr' },
   { name: 'Deltadore',      slug: 'deltadore',      logo: 'deltadore.svg',      url: 'https://www.deltadore.fr' },
   { name: 'Urmet',          slug: 'urmet',          logo: 'urmet.svg',          url: 'https://www.urmet.fr/' },
   { name: 'Teddington',     slug: 'teddington',     logo: 'teddington.png',     url: 'https://www.teddington.com/' },
   { name: 'Thermor',        slug: 'thermor',        logo: 'thermor.svg',        url: 'https://www.thermor.com' },
 ]
 
+// Tiers : tier:'common'=bleu (80% total), tier:'rare'=rose (16%), tier:'legendary'=or (4%)
 const PRIZES_DEFAULT = [
-  { name: 'Casquette Milwaukee', img: '/casquette.png',          stock: 10, prob: 25 },
-  { name: 'Mug Feilo Sylvania',  img: '/mug.png',                stock: 10, prob: 25 },
-  { name: 'Gourde Hager',        img: '/gourde.png',             stock: 10, prob: 25 },
-  { name: 'Casquette Sylvania',  img: '/casquette-sylvania.png', stock: 10, prob: 25 },
+  { name: 'Casquette Milwaukee', img: '/casquette.png',          stock: 10, prob: 20, tier: 'common' },
+  { name: 'Mug Feilo Sylvania',  img: '/mug.png',                stock: 10, prob: 20, tier: 'common' },
+  { name: 'Gourde Hager',        img: '/gourde.png',             stock: 10, prob: 20, tier: 'common' },
+  { name: 'Casquette Sylvania',  img: '/casquette-sylvania.png', stock: 10, prob: 20, tier: 'common' },
+  { name: 'T-shirt ROYELEC',     img: '/tshirt.png',             stock: 10, prob: 20, tier: 'common' },
+  { name: 'Camera Xiaomi C200',  img: '/xiaomic200.png',         stock: 3,  prob: 16, tier: 'rare' },
+  { name: 'Diffuseur Thermor',   img: '/diffuseurthermor.png',   stock: 2,  prob: 4,  tier: 'legendary' },
 ]
+
+const TIER_COLORS = {
+  common:    { bg: '#0A1A3A', border: '#1A4080', glow: 'rgba(50,100,255,0.3)',  label: '#4A90FF', name: 'Commun'    },
+  rare:      { bg: '#2A0A2A', border: '#8A1A8A', glow: 'rgba(200,50,200,0.3)', label: '#FF69B4', name: 'Rare'      },
+  legendary: { bg: '#2A1A00', border: '#8A6000', glow: 'rgba(255,200,0,0.3)',  label: '#FFD700', name: 'Légendaire'},
+}
 
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js'
@@ -139,10 +149,44 @@ function renderAdmin(){
                 <input id="new-prize-prob" type="number" min="1" max="100" value="25" style="width:100%;padding:10px;border-radius:8px;border:1px solid #4A1A6A;background:#0D0015;color:white;font-size:14px;text-align:center;outline:none">
               </div>
             </div>
+            <div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px">Tier de rareté</div>
+              <select id="new-prize-tier" style="width:100%;padding:10px;border-radius:8px;border:1px solid #4A1A6A;background:#0D0015;color:white;font-size:14px;outline:none">
+                <option value="common">Commun (bleu)</option>
+                <option value="rare">Rare (rose)</option>
+                <option value="legendary">Légendaire (or)</option>
+              </select>
+            </div>
             <button id="admin-add-prize" style="padding:12px;background:linear-gradient(135deg,#3A1050,#5A1F78);color:white;border:1px solid #7B2D9B;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer">Ajouter ce prix</button>
           </div>
           <div id="admin-add-status" style="font-size:13px;color:#9B4DBB;margin-top:8px;text-align:center"></div>
         </div>
+      </div>
+
+      <!-- FOURNISSEURS -->
+      <div style="background:#1A0028;border:1px solid #3A1060;border-radius:16px;padding:20px;margin-bottom:16px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#9B4DBB;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Gestion des fournisseurs</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px">Ajouter ou supprimer des fournisseurs affichés dans l'app</div>
+        <div id="admin-fournisseurs"></div>
+        <button id="admin-save-fourn" style="margin-top:12px;padding:12px 24px;background:#5A1F78;color:white;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;width:100%">Sauvegarder les fournisseurs</button>
+        <div id="admin-fourn-status" style="font-size:13px;color:#9B4DBB;margin-top:8px;text-align:center"></div>
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #2A0040">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">Ajouter un fournisseur</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <input id="new-fourn-name" placeholder="Nom du fournisseur" style="padding:10px;border-radius:8px;border:1px solid #4A1A6A;background:#0D0015;color:white;font-size:14px;outline:none">
+            <input id="new-fourn-url" placeholder="URL (ex: https://www.hager.fr)" style="padding:10px;border-radius:8px;border:1px solid #4A1A6A;background:#0D0015;color:white;font-size:14px;outline:none">
+            <input id="new-fourn-logo" placeholder="Chemin logo (ex: /logos/hager.png)" style="padding:10px;border-radius:8px;border:1px solid #4A1A6A;background:#0D0015;color:white;font-size:14px;outline:none">
+            <button id="admin-add-fourn" style="padding:12px;background:linear-gradient(135deg,#3A1050,#5A1F78);color:white;border:1px solid #7B2D9B;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer">Ajouter</button>
+          </div>
+          <div id="admin-add-fourn-status" style="font-size:13px;color:#9B4DBB;margin-top:8px;text-align:center"></div>
+        </div>
+      </div>
+
+      <!-- RESET -->
+      <div style="background:#1A0028;border:1px solid #3A1060;border-radius:16px;padding:20px;margin-bottom:16px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#9B4DBB;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Outils de test</div>
+        <button id="admin-reset-all" style="padding:12px 24px;background:rgba(255,50,50,0.1);color:#ff6b6b;border:1px solid rgba(255,50,50,0.3);border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;width:100%">Réinitialiser toutes les données participants</button>
+        <div id="admin-reset-status" style="font-size:13px;color:#ff6b6b;margin-top:8px;text-align:center"></div>
       </div>
 
       <!-- BONUS PODIUM -->
@@ -186,25 +230,37 @@ function renderAdmin(){
 }
 
 function renderPrizesAdmin(prizes){
-  document.getElementById('admin-prizes').innerHTML = prizes.map((p,i) => `
-    <div style="background:#0D0015;border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid #2A0040">
+  document.getElementById('admin-prizes').innerHTML = prizes.map((p,i) => {
+    const tc = TIER_COLORS[p.tier||'common']
+    return `<div style="background:#0D0015;border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid ${tc.border}">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
         <img src="${p.img}" style="width:48px;height:42px;object-fit:contain;border-radius:6px;background:#1A0028">
-        <div style="flex:1;font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:white">${p.name}</div>
+        <div style="flex:1">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:white">${p.name}</div>
+          <div style="font-size:10px;color:${tc.label};font-weight:700;text-transform:uppercase;letter-spacing:1px">${tc.name}</div>
+        </div>
         <button onclick="deletePrize(${i})" style="background:rgba(255,50,50,0.15);border:1px solid rgba(255,50,50,0.3);color:#ff6b6b;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700">Supprimer</button>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
         <div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px">Stock restant</div>
-          <input id="stock-${i}" type="number" min="0" value="${p.stock||0}" style="width:100%;padding:8px;border-radius:8px;border:1px solid #4A1A6A;background:#1A0028;color:white;font-size:16px;font-weight:700;text-align:center;outline:none">
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px">Stock</div>
+          <input id="stock-${i}" type="number" min="0" value="${p.stock||0}" style="width:100%;padding:8px;border-radius:8px;border:1px solid #4A1A6A;background:#1A0028;color:white;font-size:15px;font-weight:700;text-align:center;outline:none">
         </div>
         <div>
           <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px">Chances (%)</div>
-          <input id="prob-${i}" type="number" min="1" max="100" value="${p.prob||25}" style="width:100%;padding:8px;border-radius:8px;border:1px solid #4A1A6A;background:#1A0028;color:white;font-size:16px;font-weight:700;text-align:center;outline:none">
+          <input id="prob-${i}" type="number" min="1" max="100" value="${p.prob||25}" style="width:100%;padding:8px;border-radius:8px;border:1px solid #4A1A6A;background:#1A0028;color:white;font-size:15px;font-weight:700;text-align:center;outline:none">
+        </div>
+        <div>
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px">Tier</div>
+          <select id="tier-${i}" style="width:100%;padding:8px;border-radius:8px;border:1px solid #4A1A6A;background:#1A0028;color:white;font-size:13px;outline:none">
+            <option value="common" ${(p.tier||'common')==='common'?'selected':''}>Commun</option>
+            <option value="rare" ${p.tier==='rare'?'selected':''}>Rare</option>
+            <option value="legendary" ${p.tier==='legendary'?'selected':''}>Légendaire</option>
+          </select>
         </div>
       </div>
-    </div>
-  `).join('')
+    </div>`
+  }).join('')
 }
 
 let adminPrizes = []
@@ -256,6 +312,7 @@ async function loadAdminData(){
       ...p,
       stock: parseInt(document.getElementById(`stock-${i}`).value) || 0,
       prob: parseInt(document.getElementById(`prob-${i}`).value) || 25,
+      tier: document.getElementById(`tier-${i}`).value || 'common',
     }))
     adminPrizes = updated
     await update(ref(db,'config'), { prizes: updated })
@@ -279,6 +336,56 @@ async function loadAdminData(){
     document.getElementById('new-prize-prob').value = '25'
     document.getElementById('admin-add-status').textContent = 'Prix ajouté !'
     setTimeout(() => document.getElementById('admin-add-status').textContent = '', 2000)
+  })
+
+  // Fournisseurs
+  let adminFourn = config.fournisseurs || STANDS.map(s => ({ name: s.name, url: s.url, logo: '/logos/' + s.logo }))
+  
+  function renderFournAdmin(list){
+    document.getElementById('admin-fournisseurs').innerHTML = list.map((f,i) => `
+      <div style="display:flex;align-items:center;gap:10px;padding:10px;background:#0D0015;border-radius:8px;margin-bottom:8px;border:1px solid #2A0040">
+        <img src="${f.logo}" style="width:40px;height:32px;object-fit:contain;background:#1A0028;border-radius:4px">
+        <div style="flex:1">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:white">${f.name}</div>
+          <div style="font-size:11px;color:#9B4DBB">${f.url.replace('https://','')}</div>
+        </div>
+        <button onclick="deleteFourn(${i})" style="background:rgba(255,50,50,0.15);border:1px solid rgba(255,50,50,0.3);color:#ff6b6b;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700">X</button>
+      </div>
+    `).join('')
+  }
+  renderFournAdmin(adminFourn)
+
+  window.deleteFourn = async function(idx){
+    adminFourn.splice(idx, 1)
+    renderFournAdmin(adminFourn)
+  }
+
+  document.getElementById('admin-save-fourn').addEventListener('click', async () => {
+    await update(ref(db,'config'), { fournisseurs: adminFourn })
+    document.getElementById('admin-fourn-status').textContent = 'Fournisseurs sauvegardés !'
+    setTimeout(() => document.getElementById('admin-fourn-status').textContent = '', 2000)
+  })
+
+  document.getElementById('admin-add-fourn').addEventListener('click', async () => {
+    const name = document.getElementById('new-fourn-name').value.trim()
+    const url = document.getElementById('new-fourn-url').value.trim()
+    const logo = document.getElementById('new-fourn-logo').value.trim()
+    if(!name || !url){ document.getElementById('admin-add-fourn-status').textContent = 'Nom et URL requis'; return }
+    adminFourn.push({ name, url, logo: logo || '/logos/default.png' })
+    renderFournAdmin(adminFourn)
+    document.getElementById('new-fourn-name').value = ''
+    document.getElementById('new-fourn-url').value = ''
+    document.getElementById('new-fourn-logo').value = ''
+    document.getElementById('admin-add-fourn-status').textContent = 'Fournisseur ajouté !'
+    setTimeout(() => document.getElementById('admin-add-fourn-status').textContent = '', 2000)
+  })
+
+  // Reset toutes les données
+  document.getElementById('admin-reset-all').addEventListener('click', async () => {
+    if(!confirm('Supprimer TOUTES les données participants ? Cette action est irréversible.')) return
+    await set(ref(db,'companies'), null)
+    document.getElementById('admin-reset-status').textContent = 'Données supprimées !'
+    setTimeout(() => document.getElementById('admin-reset-status').textContent = '', 3000)
   })
 
   // Sauvegarder bonus
@@ -591,34 +698,46 @@ function renderApp(){
     if(state.visited.length < STANDS.length) startCountdown()
   })
 
-  // Probabilités calculées depuis le stock + bonus podium
+  // Probabilités avec tiers de rareté
   async function computeProbabilities(){
     const configSnap = await get(ref(db,'config'))
     const config = configSnap.exists() ? configSnap.val() : {}
-    const prizes = (config.prizes || PRIZES_DEFAULT).filter(p => (p.stock||0) > 0)
+    const allPrizes = config.prizes || PRIZES_DEFAULT
     const bonus = config.bonus || {}
-    if(prizes.length === 0) return []
 
-    // Utiliser les % fixes définis dans l'admin
-    // Normaliser pour que la somme fasse 100
-    const totalProb = prizes.reduce((s,p) => s + (p.prob||25), 0)
-    let probs = prizes.map(p => ({ ...p, probNorm: (p.prob||25) / totalProb }))
+    // Filtrer par stock > 0
+    const available = allPrizes.filter(p => (p.stock||0) > 0)
+    if(available.length === 0) return []
 
-    // Appliquer bonus podium sur le prix avec le plus grand %
+    // Grouper par tier
+    const commons    = available.filter(p => (p.tier||'common') === 'common')
+    const rares      = available.filter(p => p.tier === 'rare')
+    const legendaries= available.filter(p => p.tier === 'legendary')
+
+    // Probabilités totales par tier (si tier épuisé ses % vont aux commons)
+    let pCommon = 0.80, pRare = 0.16, pLegendary = 0.04
+    if(rares.length === 0)      { pCommon += pRare; pRare = 0 }
+    if(legendaries.length === 0){ pCommon += pLegendary; pLegendary = 0 }
+    if(commons.length === 0)    { pRare += pCommon; pCommon = 0 }
+
+    // Distribuer équitablement au sein de chaque tier
+    const result = []
+    if(commons.length > 0)     commons.forEach(p => result.push({...p, prob: pCommon / commons.length}))
+    if(rares.length > 0)       rares.forEach(p => result.push({...p, prob: pRare / rares.length}))
+    if(legendaries.length > 0) legendaries.forEach(p => result.push({...p, prob: pLegendary / legendaries.length}))
+
+    // Appliquer bonus podium sur le meilleur prix
     if(state.rank && state.rank <= 3){
       const bonusPct = (bonus[state.rank] || 0) / 100
-      if(bonusPct > 0){
-        const maxIdx = probs.reduce((best,p,i) => p.probNorm > probs[best].probNorm ? i : best, 0)
-        probs = probs.map((p,i) => ({
-          ...p, probNorm: i === maxIdx ? Math.min(1, p.probNorm + bonusPct) : p.probNorm
-        }))
-        const total = probs.reduce((s,p) => s + p.probNorm, 0)
-        probs = probs.map(p => ({ ...p, probNorm: p.probNorm / total }))
+      if(bonusPct > 0 && result.length > 0){
+        const maxIdx = result.reduce((best,p,i) => p.prob > result[best].prob ? i : best, 0)
+        result[maxIdx].prob = Math.min(1, result[maxIdx].prob + bonusPct)
+        const total = result.reduce((s,p) => s + p.prob, 0)
+        result.forEach(p => p.prob = p.prob / total)
       }
     }
 
-    // Renommer probNorm en prob pour le tirage
-    return probs.map(p => ({ ...p, prob: p.probNorm }))
+    return result
   }
 
   // Sons
@@ -731,11 +850,14 @@ function renderApp(){
   document.getElementById('btn-lb-prog').addEventListener('click', showLeaderboard)
 
   // --- Fournisseurs ---
-  document.getElementById('btn-fournisseurs').addEventListener('click', () => {
-    document.getElementById('fournisseurs-list').innerHTML = STANDS.map(s => `
+  document.getElementById('btn-fournisseurs').addEventListener('click', async () => {
+    const configSnap = await get(ref(db,'config'))
+    const config = configSnap.exists() ? configSnap.val() : {}
+    const fournisseurs = config.fournisseurs || STANDS.map(s => ({ name: s.name, url: s.url, logo: '/logos/' + s.logo }))
+    document.getElementById('fournisseurs-list').innerHTML = fournisseurs.map(s => `
       <a href="${s.url}" target="_blank" rel="noopener" class="fourn-row">
         <div class="fourn-logo-wrap">
-          <img class="fourn-logo" src="/logos/${s.logo}" alt="${s.name}"
+          <img class="fourn-logo" src="${s.logo}" alt="${s.name}"
             onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
           <span class="fourn-fallback" style="display:none">${s.name}</span>
         </div>
@@ -756,31 +878,43 @@ function renderApp(){
 
   async function showPrizesPreview(){
     const prizes = await computeProbabilities()
+    const configSnap = await get(ref(db,'config'))
+    const config = configSnap.exists() ? configSnap.val() : {}
     const overlay = document.createElement('div')
     overlay.className = 'casino-overlay'
     overlay.style.cssText = `position:fixed;inset:0;background:#0D0015;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;opacity:0;transition:opacity .3s;padding:24px;overflow:auto`
+    const allPrizesForPreview = config.prizes || PRIZES_DEFAULT
     overlay.innerHTML = `
       <div style="width:100%;max-width:380px">
-        <div style="text-align:center;margin-bottom:24px">
+        <div style="text-align:center;margin-bottom:20px">
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:#9B4DBB;margin-bottom:6px">Complétez les ${STANDS.length} stands</div>
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;color:white">Prix à gagner</div>
           <div style="width:60px;height:2px;background:linear-gradient(90deg,transparent,#7B2D9B,transparent);margin:10px auto 0"></div>
         </div>
-        ${prizes.length === 0 ? '<div style="text-align:center;color:rgba(255,255,255,0.5);padding:20px">Aucun prix disponible pour le moment</div>' :
-          prizes.map(p => `
-            <div style="background:linear-gradient(135deg,#1A0028,#2A0040);border:1px solid #4A1A6A;border-radius:16px;padding:20px;margin-bottom:14px;display:flex;align-items:center;gap:16px;position:relative;overflow:hidden">
-              <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 30% 50%,rgba(123,45,155,0.15),transparent 70%);pointer-events:none"></div>
-              <div style="position:relative;width:90px;height:80px;flex-shrink:0;background:rgba(255,255,255,0.04);border-radius:10px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.08)">
-                <img src="${p.img}" style="max-width:80px;max-height:72px;object-fit:contain;border-radius:6px">
-              </div>
-              <div style="flex:1;position:relative">
-                <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:white;margin-bottom:4px">${p.name}</div>
-                <div style="display:inline-block;background:rgba(123,45,155,0.3);border:1px solid rgba(123,45,155,0.5);padding:3px 10px;border-radius:20px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:#C490DD;letter-spacing:1px;text-transform:uppercase">Stock : ${p.stock}</div>
-              </div>
-            </div>
-          `).join('')
+        ${allPrizesForPreview.length === 0 ? '<div style="text-align:center;color:rgba(255,255,255,0.5);padding:20px">Aucun prix disponible</div>' :
+          ['common','rare','legendary'].map(tier => {
+            const tierPrizes = allPrizesForPreview.filter(p => (p.tier||'common') === tier)
+            if(tierPrizes.length === 0) return ''
+            const tc = TIER_COLORS[tier]
+            return tierPrizes.map(p => {
+              const outOfStock = (p.stock||0) === 0
+              return `<div style="background:linear-gradient(135deg,${tc.bg},#0D0015);border:1px solid ${tc.border};border-radius:14px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:14px;position:relative;overflow:hidden;${outOfStock?'opacity:0.4':''}">
+                <div style="position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,${tc.glow},transparent 60%);pointer-events:none"></div>
+                <div style="position:relative;width:72px;height:64px;flex-shrink:0;background:rgba(255,255,255,0.04);border-radius:8px;display:flex;align-items:center;justify-content:center;border:1px solid ${tc.border}">
+                  <img src="${p.img}" style="max-width:64px;max-height:58px;object-fit:contain;border-radius:6px">
+                </div>
+                <div style="flex:1;position:relative">
+                  <div style="font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:800;color:white;margin-bottom:5px">${p.name}</div>
+                  <div style="display:flex;gap:6px;flex-wrap:wrap">
+                    <div style="background:${tc.border};border-radius:20px;padding:2px 10px;font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:${tc.label};letter-spacing:1px;text-transform:uppercase">${tc.name}</div>
+                    <div style="background:rgba(255,255,255,0.06);border-radius:20px;padding:2px 10px;font-size:11px;color:rgba(255,255,255,0.5)">${outOfStock ? 'Épuisé' : 'Stock : ' + p.stock}</div>
+                  </div>
+                </div>
+              </div>`
+            }).join('')
+          }).join('')
         }
-        <div style="text-align:center;margin:16px 0;font-size:13px;color:rgba(255,255,255,0.4)">Visitez tous les stands pour déclencher la roulette</div>
+        <div style="text-align:center;margin:14px 0;font-size:13px;color:rgba(255,255,255,0.4)">Visitez tous les stands pour déclencher la roulette</div>
         <button onclick="document.querySelectorAll('.casino-overlay').forEach(e=>e.remove())" style="width:100%;padding:14px;background:linear-gradient(135deg,#5A1F78,#7B2D9B);color:white;border:none;border-radius:12px;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;cursor:pointer;letter-spacing:1px">Fermer</button>
       </div>
     `
@@ -918,11 +1052,13 @@ function renderApp(){
         <div style="position:absolute;top:0;bottom:0;left:calc(50% - ${itemW/2}px);width:${itemW}px;border:2px solid #FFD700;border-radius:4px;z-index:4;pointer-events:none;box-shadow:0 0 20px rgba(255,215,0,0.3)"></div>
         <div style="overflow:hidden;border-radius:12px;border:1px solid #3A1060">
           <div id="roulette-strip" style="display:flex;transform:translateX(${startOffset}px);will-change:transform;transition:none">
-            ${items.map((p,i) => `
-              <div style="min-width:${itemW}px;height:${itemW}px;display:flex;align-items:center;justify-content:center;background:${i%2===0?'#150020':'#1A0028'};border-right:1px solid #2A0040;flex-shrink:0">
-                <img src="${p.img}" style="max-width:${itemW-20}px;max-height:${itemW-20}px;object-fit:contain;border-radius:6px">
-              </div>
-            `).join('')}
+            ${items.map((p,i) => {
+              const tc2 = TIER_COLORS[p.tier||'common']
+              return `<div style="min-width:${itemW}px;height:${itemW}px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:${i%2===0?tc2.bg:'#0D0015'};border-right:1px solid ${tc2.border};flex-shrink:0;position:relative">
+                <div style="position:absolute;top:4px;right:6px;font-size:9px;font-weight:700;color:${tc2.label};font-family:'Barlow Condensed',sans-serif;letter-spacing:1px;text-transform:uppercase">${tc2.name}</div>
+                <img src="${p.img}" style="max-width:${itemW-24}px;max-height:${itemW-28}px;object-fit:contain;border-radius:6px">
+              </div>`
+            }).join('')}
           </div>
         </div>
         <div style="position:absolute;top:0;left:0;width:80px;height:100%;background:linear-gradient(to right,#0D0015,transparent);pointer-events:none;z-index:3"></div>
@@ -974,21 +1110,23 @@ function renderApp(){
 
   function showPrizeResult(prizeName){
     const configPrizes = configCache.prizes || PRIZES_DEFAULT
-    const prize = configPrizes.find(p => p.name === prizeName) || { name: prizeName, img: '' }
+    const prize = configPrizes.find(p => p.name === prizeName) || { name: prizeName, img: '', tier: 'common' }
+    const tc = TIER_COLORS[prize.tier || 'common']
     const overlay = document.createElement('div')
     overlay.className = 'casino-overlay'
     overlay.style.cssText = `position:fixed;inset:0;background:#0D0015;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;padding:24px;opacity:0;transition:opacity .3s`
     overlay.innerHTML = `
+      <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:${tc.label};letter-spacing:4px;text-transform:uppercase;margin-bottom:8px">${tc.name}</div>
       <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:#9B4DBB;letter-spacing:4px;text-transform:uppercase;margin-bottom:16px">Votre prix</div>
       <div style="position:relative;margin-bottom:24px">
-        <div style="position:absolute;inset:-20px;background:radial-gradient(ellipse,rgba(255,215,0,0.15),transparent 70%);pointer-events:none"></div>
-        <div style="width:200px;height:180px;background:linear-gradient(135deg,#1A0028,#2A0040);border:2px solid #FFD700;border-radius:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 40px rgba(255,215,0,0.3)">
+        <div style="position:absolute;inset:-20px;background:radial-gradient(ellipse,${tc.glow},transparent 70%);pointer-events:none"></div>
+        <div style="width:200px;height:180px;background:linear-gradient(135deg,${tc.bg},#0D0015);border:2px solid ${tc.border};border-radius:16px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 40px ${tc.glow}">
           <img src="${prize.img}" style="max-width:170px;max-height:155px;object-fit:contain;border-radius:10px">
         </div>
       </div>
       <div style="font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:800;color:white;text-align:center;margin-bottom:8px">${prize.name}</div>
       <div style="font-size:13px;color:rgba(255,255,255,0.5);text-align:center;max-width:260px;margin-bottom:32px;line-height:1.6">Présentez cet écran à l'accueil pour récupérer votre cadeau !</div>
-      <button onclick="document.querySelectorAll('.casino-overlay').forEach(e=>e.remove())" style="padding:14px 40px;background:linear-gradient(135deg,#5A1F78,#9B4DBB);color:white;border:none;border-radius:12px;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;cursor:pointer;letter-spacing:1px">Continuer</button>
+      <button onclick="document.querySelectorAll('.casino-overlay').forEach(e=>e.remove())" style="padding:14px 40px;background:linear-gradient(135deg,${tc.bg},${tc.border});color:white;border:1px solid ${tc.label};border-radius:12px;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:800;cursor:pointer;letter-spacing:1px">Continuer</button>
     `
     document.body.appendChild(overlay)
     requestAnimationFrame(() => overlay.style.opacity = '1')
@@ -1078,6 +1216,18 @@ function renderApp(){
       show('s-progression')
       if(state.visited.length < STANDS.length) startCountdown()
     })
+  }
+
+  // Exposer reset pour l'admin
+  window.resetMyProgress = async function(){
+    localStorage.removeItem('royelec-company')
+    localStorage.removeItem('royelec-start')
+    if(state.companyKey){
+      await set(ref(db, 'companies/' + state.companyKey), null)
+    }
+    state = { company: '', visited: [], companyKey: '', startTime: null, rank: null }
+    show('s-accueil')
+    showToast('Progression réinitialisée')
   }
 
   function showToast(msg){
