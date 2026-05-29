@@ -45,6 +45,46 @@ const TIER_COLORS = {
   legendary: { bg: '#2A1A00', border: '#8A6000', glow: 'rgba(255,200,0,0.3)',  label: '#FFD700', name: 'Légendaire'},
 }
 
+  function computeProbsSync(allPrizes, bonus, rank){
+    const available = allPrizes.filter(p => (p.stock||0) > 0)
+    if(available.length === 0) return []
+
+    const commons     = available.filter(p => (p.tier||'common') === 'common')
+    const rares       = available.filter(p => p.tier === 'rare')
+    const legendaries = available.filter(p => p.tier === 'legendary')
+
+    // % globaux par tier (redistribués si tier épuisé)
+    let pCommon = 0.80, pRare = 0.16, pLegendary = 0.04
+    if(rares.length === 0)      { pCommon += pRare; pRare = 0 }
+    if(legendaries.length === 0){ pCommon += pLegendary; pLegendary = 0 }
+    if(commons.length === 0)    { pRare += pCommon; pCommon = 0 }
+
+    // Au sein de chaque tier : proportionnel au stock
+    const result = []
+    const addTier = (tierPrizes, tierProb) => {
+      const totalStock = tierPrizes.reduce((s,p) => s + (p.stock||0), 0)
+      tierPrizes.forEach(p => {
+        const probInTier = totalStock > 0 ? (p.stock||0) / totalStock : 1/tierPrizes.length
+        const probGlobal = probInTier * tierProb
+        result.push({...p, prob: probGlobal, probInTier, probGlobal})
+      })
+    }
+    if(commons.length > 0)     addTier(commons, pCommon)
+    if(rares.length > 0)       addTier(rares, pRare)
+    if(legendaries.length > 0) addTier(legendaries, pLegendary)
+
+    // Bonus podium
+    if(rank && rank <= 3 && bonus){
+      const bonusPct = (bonus[rank] || 0) / 100
+      if(bonusPct > 0 && result.length > 0){
+        const maxIdx = result.reduce((best,p,i) => p.prob > result[best].prob ? i : best, 0)
+        result[maxIdx].prob = Math.min(1, result[maxIdx].prob + bonusPct)
+        const total = result.reduce((s,p) => s + p.prob, 0)
+        result.forEach(p => p.prob = p.prob / total)
+      }
+    }
+    return result
+  }
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js'
 import { getDatabase, ref, set, get, onValue, update } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js'
@@ -128,7 +168,7 @@ function renderAdmin(){
       <!-- PRIX -->
       <div style="background:#1A0028;border:1px solid #3A1060;border-radius:16px;padding:20px;margin-bottom:16px">
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#9B4DBB;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Gestion des prix</div>
-        <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px">Les % sont fixes — le stock indique quand le prix est épuisé</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px">Les chances sont calculées automatiquement selon le stock de chaque tier. Modifiez le stock pour ajuster les probabilités.</div>
         <div id="admin-prizes"></div>
         <button id="admin-save-prizes" style="margin-top:12px;padding:12px 24px;background:#5A1F78;color:white;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;width:100%">Sauvegarder les prix</button>
         <div id="admin-prizes-status" style="font-size:13px;color:#9B4DBB;margin-top:8px;text-align:center"></div>
@@ -139,15 +179,9 @@ function renderAdmin(){
           <div style="display:flex;flex-direction:column;gap:8px">
             <input id="new-prize-name" placeholder="Nom du prix" style="padding:10px;border-radius:8px;border:1px solid #4A1A6A;background:#0D0015;color:white;font-size:14px;outline:none">
             <input id="new-prize-img" placeholder="Nom du fichier image (ex: gourde.png)" style="padding:10px;border-radius:8px;border:1px solid #4A1A6A;background:#0D0015;color:white;font-size:14px;outline:none">
-            <div style="display:flex;gap:8px">
-              <div style="flex:1">
-                <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px">Stock</div>
-                <input id="new-prize-stock" type="number" min="0" value="10" style="width:100%;padding:10px;border-radius:8px;border:1px solid #4A1A6A;background:#0D0015;color:white;font-size:14px;text-align:center;outline:none">
-              </div>
-              <div style="flex:1">
-                <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px">Chances (%)</div>
-                <input id="new-prize-prob" type="number" min="1" max="100" value="25" style="width:100%;padding:10px;border-radius:8px;border:1px solid #4A1A6A;background:#0D0015;color:white;font-size:14px;text-align:center;outline:none">
-              </div>
+            <div>
+              <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px">Stock initial</div>
+              <input id="new-prize-stock" type="number" min="0" value="10" style="width:100%;padding:10px;border-radius:8px;border:1px solid #4A1A6A;background:#0D0015;color:white;font-size:14px;text-align:center;outline:none">
             </div>
             <div>
               <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px">Tier de rareté</div>
@@ -230,37 +264,64 @@ function renderAdmin(){
 }
 
 function renderPrizesAdmin(prizes){
+  // Calculer les % réels pour affichage
+  const computed = computeProbsSync(prizes, {}, null)
+
   document.getElementById('admin-prizes').innerHTML = prizes.map((p,i) => {
     const tc = TIER_COLORS[p.tier||'common']
-    return `<div style="background:#0D0015;border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid ${tc.border}">
+    const cp = computed.find(c => c.name === p.name)
+    const pctGlobal = cp ? (cp.probGlobal*100).toFixed(1) : '—'
+    const pctInTier = cp ? (cp.probInTier*100).toFixed(1) : '—'
+    const outOfStock = (p.stock||0) === 0
+    return `<div style="background:#0D0015;border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid ${outOfStock?'rgba(255,50,50,0.3)':tc.border};${outOfStock?'opacity:0.6':''}">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
         <img src="${p.img}" style="width:48px;height:42px;object-fit:contain;border-radius:6px;background:#1A0028">
         <div style="flex:1">
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:white">${p.name}</div>
-          <div style="font-size:10px;color:${tc.label};font-weight:700;text-transform:uppercase;letter-spacing:1px">${tc.name}</div>
+          <div style="display:flex;gap:6px;align-items:center;margin-top:3px;flex-wrap:wrap">
+            <div style="font-size:10px;color:${tc.label};font-weight:700;text-transform:uppercase;letter-spacing:1px">${tc.name}</div>
+            ${outOfStock ? '<div style="font-size:10px;color:#ff6b6b;font-weight:700">ÉPUISÉ</div>' : ''}
+          </div>
         </div>
         <button onclick="deletePrize(${i})" style="background:rgba(255,50,50,0.15);border:1px solid rgba(255,50,50,0.3);color:#ff6b6b;border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700">Supprimer</button>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
-        <div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px">Stock</div>
-          <input id="stock-${i}" type="number" min="0" value="${p.stock||0}" style="width:100%;padding:8px;border-radius:8px;border:1px solid #4A1A6A;background:#1A0028;color:white;font-size:15px;font-weight:700;text-align:center;outline:none">
+      <!-- Chances calculées -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+        <div style="background:#1A0028;border-radius:8px;padding:8px;text-align:center;border:1px solid ${tc.border}">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:${tc.label}">${pctGlobal}%</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:1px">chance globale</div>
         </div>
+        <div style="background:#1A0028;border-radius:8px;padding:8px;text-align:center;border:1px solid rgba(255,255,255,0.1)">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:rgba(255,255,255,0.7)">${pctInTier}%</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:1px">dans son tier</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
         <div>
-          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px">Chances (%)</div>
-          <input id="prob-${i}" type="number" min="1" max="100" value="${p.prob||25}" style="width:100%;padding:8px;border-radius:8px;border:1px solid #4A1A6A;background:#1A0028;color:white;font-size:15px;font-weight:700;text-align:center;outline:none">
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px">Stock restant</div>
+          <input id="stock-${i}" type="number" min="0" value="${p.stock||0}" style="width:100%;padding:8px;border-radius:8px;border:1px solid #4A1A6A;background:#1A0028;color:white;font-size:16px;font-weight:700;text-align:center;outline:none" onchange="refreshPrizesDisplay()">
         </div>
         <div>
           <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px">Tier</div>
-          <select id="tier-${i}" style="width:100%;padding:8px;border-radius:8px;border:1px solid #4A1A6A;background:#1A0028;color:white;font-size:13px;outline:none">
-            <option value="common" ${(p.tier||'common')==='common'?'selected':''}>Commun</option>
-            <option value="rare" ${p.tier==='rare'?'selected':''}>Rare</option>
-            <option value="legendary" ${p.tier==='legendary'?'selected':''}>Légendaire</option>
+          <select id="tier-${i}" style="width:100%;padding:8px;border-radius:8px;border:1px solid #4A1A6A;background:#1A0028;color:white;font-size:13px;outline:none" onchange="refreshPrizesDisplay()">
+            <option value="common" ${(p.tier||'common')==='common'?'selected':''}>Commun (80%)</option>
+            <option value="rare" ${p.tier==='rare'?'selected':''}>Rare (16%)</option>
+            <option value="legendary" ${p.tier==='legendary'?'selected':''}>Légendaire (4%)</option>
           </select>
         </div>
       </div>
     </div>`
   }).join('')
+}
+
+window.refreshPrizesDisplay = function(){
+  const updated = adminPrizes.map((p,i) => ({
+    ...p,
+    stock: parseInt(document.getElementById('stock-'+i)?.value||0),
+    tier: document.getElementById('tier-'+i)?.value || p.tier || 'common',
+  }))
+  adminPrizes = updated
+  renderPrizesAdmin(adminPrizes)
 }
 
 let adminPrizes = []
@@ -569,6 +630,7 @@ function renderApp(){
     </div>
   </div>
   <div class="body">
+    <button class="btn btn-main" id="btn-scanner" style="font-size:20px;padding:18px;letter-spacing:1px">Scanner un QR code</button>
     <div class="prog-actions">
       <button class="prog-action-btn" id="btn-fournisseurs">
         <span class="prog-action-icon"></span>
@@ -581,13 +643,13 @@ function renderApp(){
     </div>
     <div class="sec-lbl">Stands</div>
     <div class="stands-grid" id="stands-grid"></div>
-    <button class="btn btn-main" id="btn-scanner">Scanner un QR code</button>
     <button class="btn btn-ghost" id="btn-lb-prog">Classement en direct</button>
   </div>
 </div>
 
 <div id="s-scanner" class="screen">
   <div class="scan-hdr">
+    <button class="btn-top-back" id="btn-back-scan">← Retour</button>
     <h2>Scanner un stand</h2>
     <p>Pointez la caméra vers le QR code du stand</p>
   </div>
@@ -598,12 +660,12 @@ function renderApp(){
       <h3 id="scan-brand">—</h3>
       <p>Stand validé avec succès</p>
     </div>
-    <button class="btn btn-ghost" id="btn-back-scan">Retour à ma progression</button>
   </div>
 </div>
 
 <div id="s-leaderboard" class="screen">
   <div class="lb-hdr">
+    <button class="btn-top-back" id="btn-back-lb">← Retour</button>
     <h2>Classement Live</h2>
     <p id="lb-sub">Chargement...</p>
   </div>
@@ -611,18 +673,17 @@ function renderApp(){
     <div class="loading" id="lb-loading"><div class="spin"></div>Connexion...</div>
     <div class="podium" id="podium"></div>
     <div id="lb-list"></div>
-    <button class="btn btn-ghost" id="btn-back-lb">Retour</button>
   </div>
 </div>
 
 <div id="s-fournisseurs" class="screen">
   <div class="lb-hdr">
+    <button class="btn-top-back" id="btn-back-fourn">← Retour</button>
     <h2>Nos fournisseurs</h2>
     <p>Découvrez leurs sites officiels</p>
   </div>
   <div class="body" style="gap:10px">
     <div id="fournisseurs-list"></div>
-    <button class="btn btn-ghost" id="btn-back-fourn">Retour</button>
   </div>
 </div>
 
@@ -698,46 +759,15 @@ function renderApp(){
     if(state.visited.length < STANDS.length) startCountdown()
   })
 
-  // Probabilités avec tiers de rareté
+  // Probabilités : stock proportionnel au sein du tier, % tier fixe
+  // Retourne aussi probGlobal et probInTier pour affichage
+
   async function computeProbabilities(){
     const configSnap = await get(ref(db,'config'))
     const config = configSnap.exists() ? configSnap.val() : {}
     const allPrizes = config.prizes || PRIZES_DEFAULT
     const bonus = config.bonus || {}
-
-    // Filtrer par stock > 0
-    const available = allPrizes.filter(p => (p.stock||0) > 0)
-    if(available.length === 0) return []
-
-    // Grouper par tier
-    const commons    = available.filter(p => (p.tier||'common') === 'common')
-    const rares      = available.filter(p => p.tier === 'rare')
-    const legendaries= available.filter(p => p.tier === 'legendary')
-
-    // Probabilités totales par tier (si tier épuisé ses % vont aux commons)
-    let pCommon = 0.80, pRare = 0.16, pLegendary = 0.04
-    if(rares.length === 0)      { pCommon += pRare; pRare = 0 }
-    if(legendaries.length === 0){ pCommon += pLegendary; pLegendary = 0 }
-    if(commons.length === 0)    { pRare += pCommon; pCommon = 0 }
-
-    // Distribuer équitablement au sein de chaque tier
-    const result = []
-    if(commons.length > 0)     commons.forEach(p => result.push({...p, prob: pCommon / commons.length}))
-    if(rares.length > 0)       rares.forEach(p => result.push({...p, prob: pRare / rares.length}))
-    if(legendaries.length > 0) legendaries.forEach(p => result.push({...p, prob: pLegendary / legendaries.length}))
-
-    // Appliquer bonus podium sur le meilleur prix
-    if(state.rank && state.rank <= 3){
-      const bonusPct = (bonus[state.rank] || 0) / 100
-      if(bonusPct > 0 && result.length > 0){
-        const maxIdx = result.reduce((best,p,i) => p.prob > result[best].prob ? i : best, 0)
-        result[maxIdx].prob = Math.min(1, result[maxIdx].prob + bonusPct)
-        const total = result.reduce((s,p) => s + p.prob, 0)
-        result.forEach(p => p.prob = p.prob / total)
-      }
-    }
-
-    return result
+    return computeProbsSync(allPrizes, bonus, state.rank)
   }
 
   // Sons

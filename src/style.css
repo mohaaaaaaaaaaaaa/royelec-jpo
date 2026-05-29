@@ -134,3 +134,6 @@ html,body{height:100%;background:var(--white);color:var(--text);font-family:'Bar
 .fourn-url{font-size:11px;color:var(--v4)}
 .fourn-arrow{font-size:18px;color:var(--v4)}
 .pod-finish{font-size:10px;color:var(--v3);font-weight:700;margin-top:2px}
+
+.btn-top-back{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:white;border-radius:8px;padding:8px 16px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:12px;display:inline-block}
+.btn-top-back:hover{background:rgba(255,255,255,0.25)}
