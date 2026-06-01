@@ -45,7 +45,7 @@ const TIER_COLORS = {
   legendary: { bg: '#2A1A00', border: '#8A6000', glow: 'rgba(255,200,0,0.3)',  label: '#FFD700', name: 'Légendaire'},
 }
 
-  function computeProbsSync(allPrizes, bonus, rank){
+  function computeProbsSync(allPrizes, bonus, rank, tierPcts){
     const available = allPrizes.filter(p => (p.stock||0) > 0)
     if(available.length === 0) return []
 
@@ -53,8 +53,14 @@ const TIER_COLORS = {
     const rares       = available.filter(p => p.tier === 'rare')
     const legendaries = available.filter(p => p.tier === 'legendary')
 
-    // % globaux par tier (redistribués si tier épuisé)
-    let pCommon = 0.80, pRare = 0.16, pLegendary = 0.04
+    // % globaux par tier depuis la config ou valeurs par défaut
+    let pCommon    = (tierPcts?.common    ?? 80) / 100
+    let pRare      = (tierPcts?.rare      ?? 16) / 100
+    let pLegendary = (tierPcts?.legendary ?? 4)  / 100
+    // Normaliser au cas où la somme != 1
+    const total = pCommon + pRare + pLegendary
+    if(total > 0){ pCommon /= total; pRare /= total; pLegendary /= total }
+    // Redistribuer si tier épuisé
     if(rares.length === 0)      { pCommon += pRare; pRare = 0 }
     if(legendaries.length === 0){ pCommon += pLegendary; pLegendary = 0 }
     if(commons.length === 0)    { pRare += pCommon; pCommon = 0 }
@@ -197,6 +203,32 @@ function renderAdmin(){
         </div>
       </div>
 
+      <!-- TIERS -->
+      <div style="background:#1A0028;border:1px solid #3A1060;border-radius:16px;padding:20px;margin-bottom:16px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#9B4DBB;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Répartition des tiers</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px">La somme doit faire 100%. Se met à jour automatiquement.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px">
+          <div style="text-align:center">
+            <div style="font-size:11px;color:#4A90FF;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Commun</div>
+            <input id="tier-pct-common" type="number" min="0" max="100" value="80" style="width:100%;padding:10px;border-radius:8px;border:1px solid #1A4080;background:#0A1A3A;color:#4A90FF;font-size:20px;font-weight:800;text-align:center;outline:none">
+            <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:4px">%</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:11px;color:#FF69B4;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Rare</div>
+            <input id="tier-pct-rare" type="number" min="0" max="100" value="16" style="width:100%;padding:10px;border-radius:8px;border:1px solid #8A1A8A;background:#2A0A2A;color:#FF69B4;font-size:20px;font-weight:800;text-align:center;outline:none">
+            <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:4px">%</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:11px;color:#FFD700;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Légendaire</div>
+            <input id="tier-pct-legendary" type="number" min="0" max="100" value="4" style="width:100%;padding:10px;border-radius:8px;border:1px solid #8A6000;background:#2A1A00;color:#FFD700;font-size:20px;font-weight:800;text-align:center;outline:none">
+            <div style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:4px">%</div>
+          </div>
+        </div>
+        <div id="tier-total-indicator" style="text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:#9B4DBB;margin-bottom:10px">Total : 100%</div>
+        <button id="admin-save-tiers" style="padding:12px 24px;background:#5A1F78;color:white;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;width:100%">Sauvegarder les tiers</button>
+        <div id="admin-tiers-status" style="font-size:13px;color:#9B4DBB;margin-top:8px;text-align:center"></div>
+      </div>
+
       <!-- FOURNISSEURS -->
       <div style="background:#1A0028;border:1px solid #3A1060;border-radius:16px;padding:20px;margin-bottom:16px">
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#9B4DBB;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Gestion des fournisseurs</div>
@@ -265,7 +297,8 @@ function renderAdmin(){
 
 function renderPrizesAdmin(prizes){
   // Calculer les % réels pour affichage
-  const computed = computeProbsSync(prizes, {}, null)
+  const tierPcts = window._adminTierPcts || null
+  const computed = computeProbsSync(prizes, {}, null, tierPcts)
 
   document.getElementById('admin-prizes').innerHTML = prizes.map((p,i) => {
     const tc = TIER_COLORS[p.tier||'common']
@@ -447,6 +480,38 @@ async function loadAdminData(){
     await set(ref(db,'companies'), null)
     document.getElementById('admin-reset-status').textContent = 'Données supprimées !'
     setTimeout(() => document.getElementById('admin-reset-status').textContent = '', 3000)
+  })
+
+  // Tiers
+  const tierPcts = config.tierPcts || { common: 80, rare: 16, legendary: 4 }
+  window._adminTierPcts = tierPcts
+  document.getElementById('tier-pct-common').value = tierPcts.common ?? 80
+  document.getElementById('tier-pct-rare').value = tierPcts.rare ?? 16
+  document.getElementById('tier-pct-legendary').value = tierPcts.legendary ?? 4
+
+  const updateTierTotal = () => {
+    const c = parseInt(document.getElementById('tier-pct-common').value)||0
+    const r = parseInt(document.getElementById('tier-pct-rare').value)||0
+    const l = parseInt(document.getElementById('tier-pct-legendary').value)||0
+    const tot = c + r + l
+    const ind = document.getElementById('tier-total-indicator')
+    ind.textContent = 'Total : ' + tot + '%'
+    ind.style.color = tot === 100 ? '#4AFF90' : '#FF6B6B'
+    window._adminTierPcts = { common: c, rare: r, legendary: l }
+    renderPrizesAdmin(adminPrizes)
+  }
+  document.getElementById('tier-pct-common').addEventListener('input', updateTierTotal)
+  document.getElementById('tier-pct-rare').addEventListener('input', updateTierTotal)
+  document.getElementById('tier-pct-legendary').addEventListener('input', updateTierTotal)
+
+  document.getElementById('admin-save-tiers').addEventListener('click', async () => {
+    const c = parseInt(document.getElementById('tier-pct-common').value)||0
+    const r = parseInt(document.getElementById('tier-pct-rare').value)||0
+    const l = parseInt(document.getElementById('tier-pct-legendary').value)||0
+    if(c + r + l !== 100){ document.getElementById('admin-tiers-status').textContent = 'La somme doit faire 100% !'; return }
+    await update(ref(db,'config'), { tierPcts: { common: c, rare: r, legendary: l } })
+    document.getElementById('admin-tiers-status').textContent = 'Tiers sauvegardés !'
+    setTimeout(() => document.getElementById('admin-tiers-status').textContent = '', 2000)
   })
 
   // Sauvegarder bonus
@@ -767,7 +832,8 @@ function renderApp(){
     const config = configSnap.exists() ? configSnap.val() : {}
     const allPrizes = config.prizes || PRIZES_DEFAULT
     const bonus = config.bonus || {}
-    return computeProbsSync(allPrizes, bonus, state.rank)
+    const tierPcts = config.tierPcts || null
+    return computeProbsSync(allPrizes, bonus, state.rank, tierPcts)
   }
 
   // Sons
