@@ -1,4 +1,7 @@
 import './style.css'
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js'
+import { getDatabase, ref, set, get, onValue, update } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js'
+
 
 const STANDS = [
   { name: 'Airwell',        slug: 'airwell',        logo: 'airwell.png',        url: 'https://www.airwell.com' },
@@ -40,9 +43,9 @@ const PRIZES_DEFAULT = [
 ]
 
 const TIER_COLORS = {
-  common:    { bg: '#0A1A3A', border: '#1A4080', glow: 'rgba(50,100,255,0.3)',  label: '#4A90FF', name: 'Commun'    },
-  rare:      { bg: '#2A0A2A', border: '#8A1A8A', glow: 'rgba(200,50,200,0.3)', label: '#FF69B4', name: 'Rare'      },
-  legendary: { bg: '#2A1A00', border: '#8A6000', glow: 'rgba(255,200,0,0.3)',  label: '#FFD700', name: 'Légendaire'},
+  common:    { bg: '#0A1A3A', border: '#1A4080', glow: 'rgba(50,100,255,0.3)',  label: '#4A90FF', name: 'Standard'    },
+  rare:      { bg: '#2A0A2A', border: '#8A1A8A', glow: 'rgba(200,50,200,0.3)', label: '#FF69B4', name: 'Séléction'      },
+  legendary: { bg: '#2A1A00', border: '#8A6000', glow: 'rgba(255,200,0,0.3)',  label: '#FFD700', name: 'Prestige'},
 }
 
   function computeProbsSync(allPrizes, bonus, rank, tierPcts){
@@ -79,21 +82,21 @@ const TIER_COLORS = {
     if(rares.length > 0)       addTier(rares, pRare)
     if(legendaries.length > 0) addTier(legendaries, pLegendary)
 
-    // Bonus podium
+    // Bonus podium — augmente les légendaires en priorité, puis les rares
     if(rank && rank <= 3 && bonus){
       const bonusPct = (bonus[rank] || 0) / 100
       if(bonusPct > 0 && result.length > 0){
-        const maxIdx = result.reduce((best,p,i) => p.prob > result[best].prob ? i : best, 0)
-        result[maxIdx].prob = Math.min(1, result[maxIdx].prob + bonusPct)
-        const total = result.reduce((s,p) => s + p.prob, 0)
-        result.forEach(p => p.prob = p.prob / total)
+        const legendaryTargets = result.filter(p => p.tier === 'legendary')
+        const rareTargets = result.filter(p => p.tier === 'rare')
+        const targets = legendaryTargets.length > 0 ? legendaryTargets : rareTargets.length > 0 ? rareTargets : result
+        const share = bonusPct / targets.length
+        targets.forEach(p => p.prob = Math.min(1, p.prob + share))
+        const totalProb = result.reduce((s,p) => s + p.prob, 0)
+        result.forEach(p => p.prob = p.prob / totalProb)
       }
     }
     return result
   }
-
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js'
-import { getDatabase, ref, set, get, onValue, update } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js'
 
 const firebaseConfig = {
   apiKey: "AIzaSyDJ_naM3flZO5cHjUPA-6owhUL_vfAd0BU",
@@ -192,9 +195,9 @@ function renderAdmin(){
             <div>
               <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px">Tier de rareté</div>
               <select id="new-prize-tier" style="width:100%;padding:10px;border-radius:8px;border:1px solid #4A1A6A;background:#0D0015;color:white;font-size:14px;outline:none">
-                <option value="common">Commun (bleu)</option>
-                <option value="rare">Rare (rose)</option>
-                <option value="legendary">Légendaire (or)</option>
+                <option value="common">Standard (bleu)</option>
+                <option value="rare">Séléction (rose)</option>
+                <option value="legendary">Prestige (or)</option>
               </select>
             </div>
             <button id="admin-add-prize" style="padding:12px;background:linear-gradient(135deg,#3A1050,#5A1F78);color:white;border:1px solid #7B2D9B;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer">Ajouter ce prix</button>
@@ -251,6 +254,13 @@ function renderAdmin(){
       <!-- RESET -->
       <div style="background:#1A0028;border:1px solid #3A1060;border-radius:16px;padding:20px;margin-bottom:16px">
         <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#9B4DBB;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Outils de test</div>
+        <button id="admin-test-roulette" style="padding:12px 24px;background:linear-gradient(135deg,#3A1050,#5A1F78);color:white;border:1px solid #7B2D9B;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;width:100%;margin-bottom:10px">Simuler un tirage</button>
+        <div id="admin-test-result" style="background:#0D0015;border-radius:10px;padding:14px;margin-bottom:12px;display:none;text-align:center">
+          <div id="admin-test-img" style="margin-bottom:8px"></div>
+          <div id="admin-test-name" style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:white;margin-bottom:4px"></div>
+          <div id="admin-test-tier" style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px"></div>
+          <div id="admin-test-pct" style="font-size:13px;color:rgba(255,255,255,0.5)"></div>
+        </div>
         <button id="admin-reset-all" style="padding:12px 24px;background:rgba(255,50,50,0.1);color:#ff6b6b;border:1px solid rgba(255,50,50,0.3);border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;width:100%">Réinitialiser toutes les données participants</button>
         <div id="admin-reset-status" style="font-size:13px;color:#ff6b6b;margin-top:8px;text-align:center"></div>
       </div>
@@ -337,9 +347,9 @@ function renderPrizesAdmin(prizes){
         <div>
           <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px">Tier</div>
           <select id="tier-${i}" style="width:100%;padding:8px;border-radius:8px;border:1px solid #4A1A6A;background:#1A0028;color:white;font-size:13px;outline:none" onchange="refreshPrizesDisplay()">
-            <option value="common" ${(p.tier||'common')==='common'?'selected':''}>Commun (80%)</option>
-            <option value="rare" ${p.tier==='rare'?'selected':''}>Rare (16%)</option>
-            <option value="legendary" ${p.tier==='legendary'?'selected':''}>Légendaire (4%)</option>
+            <option value="common" ${(p.tier||'common')==='common'?'selected':''}>Standard (80%)</option>
+            <option value="rare" ${p.tier==='rare'?'selected':''}>Séléction (16%)</option>
+            <option value="legendary" ${p.tier==='legendary'?'selected':''}>Prestige (4%)</option>
           </select>
         </div>
       </div>
@@ -472,6 +482,27 @@ async function loadAdminData(){
     document.getElementById('new-fourn-logo').value = ''
     document.getElementById('admin-add-fourn-status').textContent = 'Fournisseur ajouté !'
     setTimeout(() => document.getElementById('admin-add-fourn-status').textContent = '', 2000)
+  })
+
+  // Simuler un tirage
+  document.getElementById('admin-test-roulette').addEventListener('click', async () => {
+    const prizes = computeProbsSync(adminPrizes, {}, null, window._adminTierPcts || null)
+    if(prizes.length === 0){ alert('Aucun prix disponible'); return }
+    const rand = Math.random()
+    let cumul = 0, chosen = prizes[0]
+    for(let i=0; i<prizes.length; i++){
+      cumul += prizes[i].prob
+      if(rand < cumul){ chosen = prizes[i]; break }
+    }
+    const tc = TIER_COLORS[chosen.tier||'common']
+    const result = document.getElementById('admin-test-result')
+    result.style.display = 'block'
+    result.style.border = '1px solid ' + tc.border
+    document.getElementById('admin-test-img').innerHTML = `<img src="${chosen.img}" style="width:80px;height:70px;object-fit:contain;border-radius:8px">`
+    document.getElementById('admin-test-name').textContent = chosen.name
+    document.getElementById('admin-test-tier').style.color = tc.label
+    document.getElementById('admin-test-tier').textContent = tc.name
+    document.getElementById('admin-test-pct').textContent = 'Chance globale : ' + (chosen.probGlobal*100).toFixed(1) + '%'
   })
 
   // Reset toutes les données
@@ -1229,7 +1260,7 @@ function renderApp(){
   }
 
   function extractStand(url){
-    if(url.includes('test-roulette')){ setTimeout(() => showRoulette(), 100); return { name: '__test__', slug: 'test' } }
+
    if(url.includes('test-all-stands')){ 
      state.visited = STANDS.map(s => s.name)
       update(ref(db, 'companies/' + state.companyKey), { stands: state.visited, score: STANDS.length, name: state.company })
