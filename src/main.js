@@ -40,7 +40,7 @@ const PRIZES_DEFAULT = [
   { name: 'T-shirt ROYELEC',     img: '/tshirt.png',             stock: 10, prob: 20, tier: 'common' },
   { name: 'Camera Xiaomi C200',  img: '/xiaomic200.png',         stock: 3,  prob: 16, tier: 'rare' },
   { name: 'Diffuseur Thermor',   img: '/diffuseurthermor.png',   stock: 2,  prob: 4,  tier: 'legendary' },
-  { name: 'Magnum de rosé Château St Roseline',   img: '/magnum-lampe-de-meduse.png',   stock: 1,  prob: 4,  tier: 'legendary' },
+    { name: 'Magnum de rosé Château St Roseline',   img: '/magnum-lampe-de-meduse.png',   stock: 1,  prob: 4,  tier: 'legendary' },
 ]
 
 const TIER_COLORS = {
@@ -49,7 +49,7 @@ const TIER_COLORS = {
   legendary: { bg: '#2A1A00', border: '#8A6000', glow: 'rgba(255,200,0,0.3)',  label: '#FFD700', name: 'Prestige'},
 }
 
-  function computeProbsSync(allPrizes, bonus, rank, tierPcts){
+function computeProbsSync(allPrizes, bonus, rank, tierPcts){
     const available = allPrizes.filter(p => (p.stock||0) > 0)
     if(available.length === 0) return []
 
@@ -415,9 +415,8 @@ async function loadAdminData(){
   document.getElementById('admin-save-prizes').addEventListener('click', async () => {
     const updated = adminPrizes.map((p,i) => ({
       ...p,
-      stock: parseInt(document.getElementById(`stock-${i}`).value) || 0,
-      prob: parseInt(document.getElementById(`prob-${i}`).value) || 25,
-      tier: document.getElementById(`tier-${i}`).value || 'common',
+      stock: parseInt(document.getElementById('stock-'+i)?.value) || 0,
+      tier: document.getElementById('tier-'+i)?.value || p.tier || 'common',
     }))
     adminPrizes = updated
     await update(ref(db,'config'), { prizes: updated })
@@ -430,21 +429,20 @@ async function loadAdminData(){
     const name = document.getElementById('new-prize-name').value.trim()
     const img = document.getElementById('new-prize-img').value.trim()
     const stock = parseInt(document.getElementById('new-prize-stock').value) || 10
-    const prob = parseInt(document.getElementById('new-prize-prob').value) || 25
+    const tier = document.getElementById('new-prize-tier').value || 'common'
     if(!name || !img){ document.getElementById('admin-add-status').textContent = 'Nom et image requis'; return }
-    adminPrizes.push({ name, img: '/' + img.replace(/^\//,''), stock, prob })
+    adminPrizes.push({ name, img: '/' + img.replace(/^\//,''), stock, tier })
     renderPrizesAdmin(adminPrizes)
     await update(ref(db,'config'), { prizes: adminPrizes })
     document.getElementById('new-prize-name').value = ''
     document.getElementById('new-prize-img').value = ''
     document.getElementById('new-prize-stock').value = '10'
-    document.getElementById('new-prize-prob').value = '25'
     document.getElementById('admin-add-status').textContent = 'Prix ajouté !'
     setTimeout(() => document.getElementById('admin-add-status').textContent = '', 2000)
   })
 
   // Fournisseurs
-  let adminFourn = config.fournisseurs || STANDS.map(s => ({ name: s.name, url: s.url, logo: '/logos/' + s.logo }))
+  let adminFourn = config.fournisseurs || STANDS.map(s => ({ name: s.name, url: s.url, logo: '/logos/' + s.logo.split('/').pop() }))
   
   function renderFournAdmin(list){
     document.getElementById('admin-fournisseurs').innerHTML = list.map((f,i) => `
