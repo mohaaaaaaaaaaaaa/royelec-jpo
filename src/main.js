@@ -40,6 +40,7 @@ const PRIZES_DEFAULT = [
   { name: 'T-shirt ROYELEC',     img: '/tshirt.png',             stock: 10, prob: 20, tier: 'common' },
   { name: 'Camera Xiaomi C200',  img: '/xiaomic200.png',         stock: 3,  prob: 16, tier: 'rare' },
   { name: 'Diffuseur Thermor',   img: '/diffuseurthermor.png',   stock: 2,  prob: 4,  tier: 'legendary' },
+  { name: 'Magnum de rosé Château St Roseline',   img: '/magnum-lampe-de-meduse.png',   stock: 1,  prob: 4,  tier: 'legendary' },
 ]
 
 const TIER_COLORS = {
@@ -347,9 +348,9 @@ function renderPrizesAdmin(prizes){
         <div>
           <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:4px">Tier</div>
           <select id="tier-${i}" style="width:100%;padding:8px;border-radius:8px;border:1px solid #4A1A6A;background:#1A0028;color:white;font-size:13px;outline:none" onchange="refreshPrizesDisplay()">
-            <option value="common" ${(p.tier||'common')==='common'?'selected':''}>Standard (80%)</option>
-            <option value="rare" ${p.tier==='rare'?'selected':''}>Séléction (16%)</option>
-            <option value="legendary" ${p.tier==='legendary'?'selected':''}>Prestige (4%)</option>
+            <option value="common" ${(p.tier||'common')==='common'?'selected':''}>Commun (80%)</option>
+            <option value="rare" ${p.tier==='rare'?'selected':''}>Rare (16%)</option>
+            <option value="legendary" ${p.tier==='legendary'?'selected':''}>Légendaire (4%)</option>
           </select>
         </div>
       </div>
