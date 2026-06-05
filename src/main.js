@@ -4,31 +4,33 @@ import { getDatabase, ref, set, get, onValue, update } from 'https://www.gstatic
 
 
 const STANDS = [
-  { name: 'Airwell',        slug: 'airwell',        logo: 'airwell.png',        url: 'https://www.airwell.com' },
-  { name: 'Soler-Palau',    slug: 'soler-palau',    logo: 'soler-palau.svg',    url: 'https://www.solerpalau.com/' },
-  { name: 'Came France',    slug: 'came-france',    logo: 'came-france.png',    url: 'https://www.came.com/fr' },
-  { name: 'Ledvance',       slug: 'ledvance',       logo: 'ledvance.svg',       url: 'https://www.ledvance.fr' },
-  { name: 'Asled',          slug: 'asled',          logo: 'asled.png',          url: 'https://www.asled.fr' },
-  { name: 'Intuis',         slug: 'intuis',         logo: 'intuis.png',         url: 'https://www.intuis.fr' },
-  { name: 'Europole',       slug: 'europole',       logo: 'europole.png',       url: 'https://www.europole.com' },
-  { name: 'Bailey Lights',  slug: 'bailey-lights',  logo: 'bailey-lights.svg',  url: 'https://www.bailey.nl/fr' },
-  { name: 'Hager',          slug: 'hager',          logo: 'hager.png',         url: 'https://www.hager.fr' },
-  { name: 'Finder France',  slug: 'finder-france',  logo: 'finder-france.png',  url: 'https://www.findernet.com/fr' },
-  { name: 'Axelair',        slug: 'axelair',        logo: 'axelair.svg',        url: 'https://www.axelair-ventilation.com/fr/' },
-  { name: 'Sermes',         slug: 'sermes',         logo: 'sermes.png',         url: 'https://www.sermes.fr' },
-  { name: 'Courant',        slug: 'courant',        logo: 'courant.png',        url: 'https://www.courant.fr' },
-  { name: 'Indigo Lighting',slug: 'indigo-lighting',logo: 'indigo-lighting.png',url: 'https://www.indigo-lighting.com' },
-  { name: 'Gewiss France',  slug: 'gewiss-france',  logo: 'gewiss-france.jpg',  url: 'https://www.gewiss.com/fr/fr/' },
-  { name: 'Feilo Sylvania', slug: 'feilo-sylvania', logo: 'Sylvania.png',url: 'https://www.sylvania-group.com/fr-fr/' },
-  { name: 'Engitechs',      slug: 'engitechs',      logo: 'engitechs.svg',      url: 'https://www.engitechs.com' },
-  { name: 'Theben',         slug: 'theben',         logo: 'theben.svg',         url: 'https://www.theben.fr' },
-  { name: 'Airzone France', slug: 'airzone-france', logo: 'airzone-france.svg', url: 'https://www.airzonecontrol.com/ff/fr/' },
   { name: 'Aiphone',        slug: 'aiphone',        logo: 'aiphone.png',        url: 'https://www.aiphone.fr' },
-  { name: 'Somfy-BFT',      slug: 'somfy-bft',      logo: 'somfy.png',      url: 'https://www.somfy.fr' },
+  { name: 'Airwell',        slug: 'airwell',        logo: 'airwell.png',        url: 'https://www.airwell.com' },
+  { name: 'Airzone France', slug: 'airzone-france', logo: 'airzone-france.svg', url: 'https://www.airzonecontrol.com/ff/fr/' },
+  { name: 'Asled',          slug: 'asled',          logo: 'asled.png',          url: 'https://www.asled.fr' },
+  { name: 'Axelair',        slug: 'axelair',        logo: 'axelair.svg',        url: 'https://www.axelair-ventilation.com/fr/' },
+  { name: 'Bailey Lights',  slug: 'bailey-lights',  logo: 'bailey-lights.svg',  url: 'https://www.bailey.nl/fr' },
+  { name: 'Came France',    slug: 'came-france',    logo: 'came-france.png',    url: 'https://www.came.com/fr' },
+  { name: 'Courant',        slug: 'courant',        logo: 'courant.png',        url: 'https://www.courant.fr' },
   { name: 'Deltadore',      slug: 'deltadore',      logo: 'deltadore.svg',      url: 'https://www.deltadore.fr' },
-  { name: 'Urmet',          slug: 'urmet',          logo: 'urmet.svg',          url: 'https://www.urmet.fr/' },
+  { name: 'Engitechs',      slug: 'engitechs',      logo: 'engitechs.svg',      url: 'https://www.engitechs.com' },
+  { name: "EUR'OHM",        slug: 'eurohm',         logo: 'EurOhm.png',         url: 'https://eur-ohm.com/' },
+  { name: 'Europole',       slug: 'europole',       logo: 'europole.png',       url: 'https://www.europole.com' },
+  { name: 'Feilo Sylvania', slug: 'feilo-sylvania', logo: 'Sylvania.png',       url: 'https://www.sylvania-group.com/fr-fr/' },
+  { name: 'Finder France',  slug: 'finder-france',  logo: 'finder-france.png',  url: 'https://www.findernet.com/fr' },
+  { name: 'Gewiss France',  slug: 'gewiss-france',  logo: 'gewiss-france.jpg',  url: 'https://www.gewiss.com/fr/fr/' },
+  { name: 'GREE',           slug: 'gree',           logo: 'gree.svg',           url: 'https://greeproducts.com/fr/' },
+  { name: 'Hager',          slug: 'hager',          logo: 'hager.png',          url: 'https://www.hager.fr' },
+  { name: 'Indigo Lighting',slug: 'indigo-lighting',logo: 'indigo-lighting.png',url: 'https://www.indigo-lighting.com' },
+  { name: 'Intuis',         slug: 'intuis',         logo: 'intuis.png',         url: 'https://www.intuis.fr' },
+  { name: 'Ledvance',       slug: 'ledvance',       logo: 'ledvance.svg',       url: 'https://www.ledvance.fr' },
+  { name: 'Sermes',         slug: 'sermes',         logo: 'sermes.png',         url: 'https://www.sermes.fr' },
+  { name: 'Soler-Palau',    slug: 'soler-palau',    logo: 'soler-palau.svg',    url: 'https://www.solerpalau.com/' },
+  { name: 'Somfy-BFT',      slug: 'somfy-bft',      logo: 'somfy.png',          url: 'https://www.somfy.fr' },
   { name: 'Teddington',     slug: 'teddington',     logo: 'teddington.png',     url: 'https://www.teddington.com/' },
+  { name: 'Theben',         slug: 'theben',         logo: 'theben.svg',         url: 'https://www.theben.fr' },
   { name: 'Thermor',        slug: 'thermor',        logo: 'thermor.svg',        url: 'https://www.thermor.com' },
+  { name: 'Urmet',          slug: 'urmet',          logo: 'urmet.svg',          url: 'https://www.urmet.fr/' },
 ]
 
 // Tiers : tier:'common'=bleu (80% total), tier:'rare'=rose (16%), tier:'legendary'=or (4%)
@@ -45,7 +47,7 @@ const PRIZES_DEFAULT = [
 
 const TIER_COLORS = {
   common:    { bg: '#0A1A3A', border: '#1A4080', glow: 'rgba(50,100,255,0.3)',  label: '#4A90FF', name: 'Standard'    },
-  rare:      { bg: '#2A0A2A', border: '#8A1A8A', glow: 'rgba(200,50,200,0.3)', label: '#FF69B4', name: 'Séléction'      },
+  rare:      { bg: '#2A0A2A', border: '#8A1A8A', glow: 'rgba(200,50,200,0.3)', label: '#FF69B4', name: 'Sélection'      },
   legendary: { bg: '#2A1A00', border: '#8A6000', glow: 'rgba(255,200,0,0.3)',  label: '#FFD700', name: 'Prestige'},
 }
 
@@ -98,6 +100,21 @@ function computeProbsSync(allPrizes, bonus, rank, tierPcts){
     }
     return result
   }
+
+// Calcule les % de tiers ajustés selon le nombre de stands visités
+function applyProgBonus(tierPcts, standsVisited, bonusRarePerStand, bonusLegPerStand){
+  const addRare = standsVisited * (bonusRarePerStand || 0)
+  const addLeg  = standsVisited * (bonusLegPerStand  || 0)
+  let c = (tierPcts.common    ?? 80)
+  let r = (tierPcts.rare      ?? 16) + addRare
+  let l = (tierPcts.legendary ?? 4)  + addLeg
+  // Prendre sur les common
+  const taken = addRare + addLeg
+  c = Math.max(0, c - taken)
+  // Normaliser
+  const total = c + r + l
+  return { common: c/total*100, rare: r/total*100, legendary: l/total*100 }
+}
 
 const firebaseConfig = {
   apiKey: "AIzaSyDJ_naM3flZO5cHjUPA-6owhUL_vfAd0BU",
@@ -231,6 +248,35 @@ function renderAdmin(){
         <div id="tier-total-indicator" style="text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:#9B4DBB;margin-bottom:10px">Total : 100%</div>
         <button id="admin-save-tiers" style="padding:12px 24px;background:#5A1F78;color:white;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;width:100%">Sauvegarder les tiers</button>
         <div id="admin-tiers-status" style="font-size:13px;color:#9B4DBB;margin-top:8px;text-align:center"></div>
+      </div>
+
+      <!-- PROGRESSION DES CHANCES -->
+      <div style="background:#1A0028;border:1px solid #3A1060;border-radius:16px;padding:20px;margin-bottom:16px">
+        <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:700;color:#9B4DBB;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px">Progression des chances</div>
+        <div style="font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:16px">Plus un visiteur scanne de stands, plus ses chances d'avoir un Sélection ou Prestige augmentent. Définissez le bonus par stand scanné.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div style="text-align:center">
+            <div style="font-size:11px;color:#FF69B4;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Bonus Sélection</div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input id="prog-bonus-rare" type="number" min="0" max="5" step="0.1" value="0.5" style="width:100%;padding:10px;border-radius:8px;border:1px solid #8A1A8A;background:#2A0A2A;color:#FF69B4;font-size:18px;font-weight:800;text-align:center;outline:none">
+              <span style="color:rgba(255,255,255,0.4);font-size:13px">%/stand</span>
+            </div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:11px;color:#FFD700;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Bonus Prestige</div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <input id="prog-bonus-legendary" type="number" min="0" max="5" step="0.1" value="0.2" style="width:100%;padding:10px;border-radius:8px;border:1px solid #8A6000;background:#2A1A00;color:#FFD700;font-size:18px;font-weight:800;text-align:center;outline:none">
+              <span style="color:rgba(255,255,255,0.4);font-size:13px">%/stand</span>
+            </div>
+          </div>
+        </div>
+        <div style="background:#0D0015;border-radius:10px;padding:12px;margin-bottom:12px">
+          <div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:8px">Simulation pour X stands visités :</div>
+          <input id="prog-sim-stands" type="range" min="0" max="27" value="10" style="width:100%;margin-bottom:6px">
+          <div id="prog-sim-result" style="font-family:'Barlow Condensed',sans-serif;font-size:13px;color:white;text-align:center"></div>
+        </div>
+        <button id="admin-save-prog" style="padding:12px 24px;background:#5A1F78;color:white;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;cursor:pointer;width:100%">Sauvegarder</button>
+        <div id="admin-prog-status" style="font-size:13px;color:#9B4DBB;margin-top:8px;text-align:center"></div>
       </div>
 
       <!-- FOURNISSEURS -->
@@ -556,6 +602,38 @@ async function loadAdminData(){
     setTimeout(() => document.getElementById('admin-bonus-status').textContent = '', 2000)
   })
 
+  // Progression des chances
+  const progConfig = config.progBonus || { rare: 0.5, legendary: 0.2 }
+  document.getElementById('prog-bonus-rare').value = progConfig.rare ?? 0.5
+  document.getElementById('prog-bonus-legendary').value = progConfig.legendary ?? 0.2
+
+  const updateProgSim = () => {
+    const stands = parseInt(document.getElementById('prog-sim-stands').value)
+    const bonusRare = parseFloat(document.getElementById('prog-bonus-rare').value) || 0
+    const bonusLeg = parseFloat(document.getElementById('prog-bonus-legendary').value) || 0
+    const tierPctsNow = window._adminTierPcts || { common: 80, rare: 16, legendary: 4 }
+    const simPcts = applyProgBonus(tierPctsNow, stands, bonusRare, bonusLeg)
+    document.getElementById('prog-sim-result').innerHTML = 
+      `<span style="color:#4A90FF">Standard : ${simPcts.common.toFixed(1)}%</span> &nbsp;
+       <span style="color:#FF69B4">Sélection : ${simPcts.rare.toFixed(1)}%</span> &nbsp;
+       <span style="color:#FFD700">Prestige : ${simPcts.legendary.toFixed(1)}%</span>
+       <div style="color:rgba(255,255,255,0.4);font-size:11px;margin-top:4px">pour ${stands} stands visités</div>`
+  }
+  document.getElementById('prog-sim-stands').addEventListener('input', updateProgSim)
+  document.getElementById('prog-bonus-rare').addEventListener('input', updateProgSim)
+  document.getElementById('prog-bonus-legendary').addEventListener('input', updateProgSim)
+  updateProgSim()
+
+  document.getElementById('admin-save-prog').addEventListener('click', async () => {
+    const progBonus = {
+      rare: parseFloat(document.getElementById('prog-bonus-rare').value) || 0,
+      legendary: parseFloat(document.getElementById('prog-bonus-legendary').value) || 0,
+    }
+    await update(ref(db,'config'), { progBonus })
+    document.getElementById('admin-prog-status').textContent = 'Progression sauvegardée !'
+    setTimeout(() => document.getElementById('admin-prog-status').textContent = '', 2000)
+  })
+
   // Stats + participants en temps réel
   onValue(ref(db,'companies'), snap => {
     if(!snap.exists()){
@@ -677,7 +755,7 @@ function renderApp(){
   <div class="hero">
     <p class="hero-eye">Journée Portes Ouvertes</p>
     <h1 class="hero-title">Découvrez<br>nos marques<br>partenaires</h1>
-    <p class="hero-sub">Scannez les QR codes de chaque stand et suivez votre progression en temps réel.</p>
+    <p class="hero-sub">Visitez un maximum de stands pour maximiser vos chances de remporter un cadeau !</p>
   </div>
   <div class="form-wrap">
     <div class="card">
@@ -723,6 +801,7 @@ function renderApp(){
       <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:2px;text-transform:uppercase;margin-bottom:2px">Remise des prix dans</div>
       <div id="countdown-val" style="font-family:'Barlow Condensed',sans-serif;font-size:24px;font-weight:800;color:white">—</div>
     </div>
+    <div id="chances-bar" style="margin-top:10px;text-align:center;padding:0 4px"></div>
   </div>
   <div class="body">
     <button class="btn btn-main" id="btn-scanner" style="font-size:20px;padding:18px;letter-spacing:1px">Scanner un QR code</button>
@@ -830,22 +909,36 @@ function renderApp(){
     const bar = document.getElementById('countdown-bar')
     const val = document.getElementById('countdown-val')
     if(!bar || !val) return
-    const update = () => {
+    let rouletteTriggered = false
+    const updateCd = () => {
       const eventTime = configCache.eventTime
       if(!eventTime){ bar.style.display = 'none'; return }
       const remaining = eventTime - Date.now()
       if(remaining <= 0){
         bar.style.display = 'block'
-        val.textContent = 'Rendez-vous à l\'accueil !'
+        val.textContent = 'Remise des prix !'
         val.style.fontSize = '16px'
+        val.style.color = '#FFD700'
         clearInterval(countdownInterval)
+        // Déclencher la roulette automatiquement si pas encore fait
+        if(!rouletteTriggered && !document.querySelector('.casino-overlay')){
+          rouletteTriggered = true
+          get(ref(db, 'companies/' + state.companyKey)).then(snap => {
+            if(!snap.exists()) return
+            const data = snap.val()
+            if(data.prize){ showPrizeResult(data.prize); return }
+            if((data.score||0) > 0) showRoulette()
+          })
+        }
       } else {
         bar.style.display = 'block'
         val.textContent = formatCountdown(remaining)
+        val.style.color = 'white'
+        val.style.fontSize = '24px'
       }
     }
-    update()
-    countdownInterval = setInterval(update, 1000)
+    updateCd()
+    countdownInterval = setInterval(updateCd, 1000)
   }
 
   // Charger config Firebase
@@ -862,8 +955,11 @@ function renderApp(){
     const config = configSnap.exists() ? configSnap.val() : {}
     const allPrizes = config.prizes || PRIZES_DEFAULT
     const bonus = config.bonus || {}
-    const tierPcts = config.tierPcts || null
-    return computeProbsSync(allPrizes, bonus, state.rank, tierPcts)
+    const baseTierPcts = config.tierPcts || { common: 80, rare: 16, legendary: 4 }
+    const progBonus = config.progBonus || { rare: 0.5, legendary: 0.2 }
+    // Ajuster les tiers selon le nombre de stands visités
+    const adjustedTierPcts = applyProgBonus(baseTierPcts, state.visited.length, progBonus.rare, progBonus.legendary)
+    return computeProbsSync(allPrizes, bonus, state.rank, adjustedTierPcts)
   }
 
   // Sons
@@ -964,6 +1060,24 @@ function renderApp(){
       state.rank = idx >= 0 ? idx + 1 : null
       document.getElementById('p-rank').textContent = '#' + (state.rank || '—')
     })
+
+    // Afficher les chances en direct
+    if(configCache.tierPcts || configCache.progBonus){
+      const baseTierPcts = configCache.tierPcts || { common: 80, rare: 16, legendary: 4 }
+      const progBonus = configCache.progBonus || { rare: 0.5, legendary: 0.2 }
+      const adj = applyProgBonus(baseTierPcts, state.visited.length, progBonus.rare, progBonus.legendary)
+      const chancesEl = document.getElementById('chances-bar')
+      if(chancesEl){
+        chancesEl.innerHTML = `
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;font-weight:700;color:rgba(255,255,255,0.5);letter-spacing:2px;text-transform:uppercase;margin-bottom:6px">Vos chances actuelles</div>
+          <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+            <div style="background:rgba(74,144,255,0.2);border:1px solid #4A90FF;border-radius:20px;padding:3px 10px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:#4A90FF">Standard ${adj.common.toFixed(0)}%</div>
+            <div style="background:rgba(255,105,180,0.2);border:1px solid #FF69B4;border-radius:20px;padding:3px 10px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:#FF69B4">Sélection ${adj.rare.toFixed(0)}%</div>
+            <div style="background:rgba(255,215,0,0.2);border:1px solid #FFD700;border-radius:20px;padding:3px 10px;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;color:#FFD700">Prestige ${adj.legendary.toFixed(0)}%</div>
+          </div>
+        `
+      }
+    }
   }
 
   document.getElementById('btn-scanner').addEventListener('click', () => {
@@ -1040,7 +1154,7 @@ function renderApp(){
             }).join('')
           }).join('')
         }
-        <div style="text-align:center;margin:14px 0;font-size:13px;color:rgba(255,255,255,0.4)">Visitez tous les stands pour déclencher la roulette</div>
+        <div style="text-align:center;margin:14px 0;font-size:13px;color:rgba(255,255,255,0.4)">Plus vous visitez de stands, meilleures sont vos chances !</div>
         <button onclick="document.querySelectorAll('.casino-overlay').forEach(e=>e.remove())" style="width:100%;padding:14px;background:linear-gradient(135deg,#5A1F78,#7B2D9B);color:white;border:none;border-radius:12px;font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;cursor:pointer;letter-spacing:1px">Fermer</button>
       </div>
     `
@@ -1082,10 +1196,11 @@ function renderApp(){
     if(isComplete) updateData.finishTime = now
     update(ref(db, 'companies/' + state.companyKey), updateData)
     stopScanner()
-    showScanAnimation(stand.name, state.visited.length, STANDS.length, isComplete)
+    showScanAnimation(stand.name, state.visited.length, STANDS.length)
   }
 
-  function showScanAnimation(brandName, visited, total, isComplete){
+  function showScanAnimation(brandName, visited, total){
+    const isComplete = false  // La roulette se déclenche à l'heure de fin, pas ici
     const pct = Math.round(visited/total*100)
     const prevPct = Math.round((visited-1)/total*100)
     const overlay = document.createElement('div')
