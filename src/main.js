@@ -672,21 +672,32 @@ async function loadAdminData(){
           const ms = c.finishTime - c.startTime
           return Math.floor(ms/60000) + 'min ' + Math.floor((ms%60000)/1000) + 's'
         })() : null
+        const key = Object.keys(snap.val()).find(k => snap.val()[k].name === c.name) || ''
         return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #2A0040">
           <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:800;color:rgba(255,255,255,0.3);width:24px;text-align:center">${i+1}</div>
           <div style="flex:1">
             <div style="font-family:'Barlow Condensed',sans-serif;font-size:15px;font-weight:700;color:white">${c.name}</div>
             ${duration ? `<div style="font-size:11px;color:rgba(255,255,255,0.4)">${duration}</div>` : ''}
           </div>
-          <div style="text-align:right">
+          <div style="text-align:right;margin-right:8px">
             <div style="font-size:13px;color:#9B4DBB;font-weight:700">${c.score||0}/${STANDS.length}</div>
             ${c.finishTime ? '<div style="font-size:10px;color:#FFD700">Terminé</div>' : ''}
           </div>
-          ${c.prize ? `<div style="font-size:11px;color:#FFD700;font-weight:700;max-width:80px;text-align:right;line-height:1.2">${c.prize}</div>` : ''}
+          ${c.prize ? `<div style="font-size:11px;color:#FFD700;font-weight:700;max-width:70px;text-align:right;line-height:1.2;margin-right:8px">${c.prize}</div>` : ''}
+          <button onclick="deleteParticipant('${key}','${c.name.replace(/'/g,"\\'")}',this)" style="background:rgba(255,50,50,0.15);border:1px solid rgba(255,50,50,0.3);color:#ff6b6b;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;flex-shrink:0">Suppr.</button>
         </div>`
       }).join('')}
     `
   })
+}
+
+window.deleteParticipant = async function(key, name, btn){
+  if(!confirm('Supprimer ' + name + ' ?')) return
+  btn.disabled = true
+  btn.textContent = '...'
+  await set(ref(db, 'companies/' + key), null)
+  btn.closest('div[style*="border-bottom"]').style.opacity = '0.3'
+  btn.textContent = 'Supprimé'
 }
 
 
@@ -694,47 +705,93 @@ async function loadAdminData(){
 // TV
 // ==========================================
 function renderTV(){
-  document.querySelector('#app').innerHTML = `<div id="tv"></div>`
-  document.querySelector('#app').style.cssText = 'background:linear-gradient(160deg,#3A1050 0%,#5A1F78 40%,#C490DD 80%,white 100%);min-height:100vh;padding:32px;font-family:Barlow,sans-serif;color:white'
+  document.querySelector('#app').innerHTML = `
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&display=swap');
+      body { margin:0; background:linear-gradient(160deg,#3A1050 0%,#5A1F78 40%,#C490DD 80%,white 100%); min-height:100vh; font-family:'Barlow Condensed',sans-serif; color:white; }
+      #tv { padding:32px; }
+      .tv-row { display:flex;align-items:center;gap:16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px 20px;transition:all 0.6s cubic-bezier(.4,0,.2,1); }
+      .tv-row.moved-up { animation: slideUp 0.6s cubic-bezier(.4,0,.2,1); }
+      @keyframes slideUp { from { transform:translateY(60px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+      @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+      @keyframes glow { 0%,100%{box-shadow:0 0 20px rgba(255,215,0,0.3)} 50%{box-shadow:0 0 40px rgba(255,215,0,0.7)} }
+      .pod-gold { background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(255,180,0,0.05)); border:2px solid #FFD700 !important; animation:glow 2s infinite; }
+      .pod-silver { background:linear-gradient(135deg,rgba(192,192,192,0.15),rgba(150,150,150,0.05)); border:2px solid #C0C0C0 !important; }
+      .pod-bronze { background:linear-gradient(135deg,rgba(205,127,50,0.15),rgba(160,100,30,0.05)); border:2px solid #CD7F32 !important; }
+      #tv-list { display:flex; flex-direction:column; gap:10px; }
+    </style>
+    <div id="tv"></div>
+  `
+
+  const PODIUM_STYLES = [
+    { label: '1ER', color: '#FFD700', shadow: 'rgba(255,215,0,0.5)', cls: 'pod-gold',   scale: 'transform:scale(1.04)' },
+    { label: '2E',  color: '#C0C0C0', shadow: 'rgba(192,192,192,0.3)', cls: 'pod-silver', scale: '' },
+    { label: '3E',  color: '#CD7F32', shadow: 'rgba(205,127,50,0.3)', cls: 'pod-bronze', scale: '' },
+  ]
+
+  let prevOrder = []
 
   onValue(ref(db,'companies'), snap => {
-    if(!snap.exists()){ document.getElementById('tv').innerHTML = '<p style="text-align:center;opacity:0.5;font-size:20px;margin-top:40px">En attente des participants...</p>'; return }
+    if(!snap.exists()){
+      document.getElementById('tv').innerHTML = '<p style="text-align:center;opacity:0.5;font-size:20px;margin-top:40px">En attente des participants...</p>'
+      return
+    }
     const all = Object.values(snap.val()).sort((a,b) => {
       if((b.score||0) !== (a.score||0)) return (b.score||0) - (a.score||0)
       return (a.finishTime||Infinity) - (b.finishTime||Infinity)
     })
-    const medals = ['1ER','2E','3E']
+
+    // Détecter les changements de position
+    const movedUp = new Set()
+    all.forEach((c, newIdx) => {
+      const oldIdx = prevOrder.indexOf(c.name)
+      if(oldIdx > newIdx && oldIdx !== -1) movedUp.add(c.name)
+    })
+    prevOrder = all.map(c => c.name)
+
+    const top3 = all.slice(0,3)
+    const rest = all.slice(3)
+
     document.getElementById('tv').innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:32px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px">
         <img src="/logo.png" style="height:64px">
         <div style="text-align:right">
-          <div style="font-size:13px;opacity:0.5;letter-spacing:3px;text-transform:uppercase;font-family:'Barlow Condensed',sans-serif">Journée Portes Ouvertes · Blois 2026</div>
-          <div style="font-size:42px;font-weight:800;font-family:'Barlow Condensed',sans-serif">Classement Live</div>
+          <div style="font-size:13px;opacity:0.5;letter-spacing:3px;text-transform:uppercase">Journée Portes Ouvertes · Blois 2026</div>
+          <div style="font-size:42px;font-weight:800">Classement Live</div>
         </div>
       </div>
-      <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);padding:6px 16px;border-radius:20px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;margin-bottom:32px">
+      <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);padding:6px 16px;border-radius:20px;font-size:14px;font-weight:700;letter-spacing:1px;margin-bottom:28px">
         <div style="width:8px;height:8px;border-radius:50%;background:#7BF;animation:pulse 1.5s infinite"></div>EN DIRECT
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
-        ${all.slice(0,3).map((c,i)=>`
-          <div style="background:rgba(255,255,255,${i===0?'0.18':'0.08'});border:1px solid rgba(255,255,255,${i===0?'0.4':'0.15'});border-radius:20px;padding:24px 16px;text-align:center;${i===0?'transform:scale(1.04)':''}">
-            <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;font-weight:800;opacity:0.6;letter-spacing:2px;margin-bottom:8px">${medals[i]}</div>
-            <div style="font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;margin-bottom:6px">${c.name}</div>
-            <div style="font-size:18px;opacity:0.65">${c.score||0} / ${STANDS.length} stands</div>
-            ${c.finishTime?'<div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px">Parcours terminé</div>':''}
-            <div style="height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin-top:14px"><div style="height:100%;background:white;border-radius:2px;width:${((c.score||0)/STANDS.length*100)}%"></div></div>
+        ${top3.map((c,i) => {
+          const ps = PODIUM_STYLES[i]
+          return `<div class="${ps.cls}" style="border-radius:20px;padding:24px 16px;text-align:center;${ps.scale};box-shadow:0 0 20px ${ps.shadow}">
+            <div style="font-size:20px;font-weight:800;color:${ps.color};letter-spacing:2px;margin-bottom:6px">${ps.label}</div>
+            <div style="font-size:28px;font-weight:800;margin-bottom:6px;color:white">${c.name}</div>
+            <div style="font-size:18px;color:${ps.color};opacity:0.85">${c.score||0} / ${STANDS.length} stands</div>
+            ${c.finishTime ? '<div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px">Parcours terminé</div>' : ''}
+            <div style="height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin-top:14px">
+              <div style="height:100%;background:${ps.color};border-radius:2px;width:${((c.score||0)/STANDS.length*100)}%;transition:width 0.8s ease"></div>
+            </div>
+          </div>`
+        }).join('')}
+      </div>
+      <div id="tv-list">
+        ${rest.map((c,i) => `
+          <div class="tv-row ${movedUp.has(c.name) ? 'moved-up' : ''}" data-name="${c.name}">
+            <div style="font-size:22px;font-weight:800;opacity:0.4;width:32px;text-align:center">${i+4}</div>
+            <div style="font-size:22px;font-weight:700;flex:1">${c.name}${c.finishTime ? ' ✓' : ''}</div>
+            <div style="width:180px;height:6px;background:rgba(255,255,255,0.12);border-radius:3px">
+              <div style="height:100%;background:rgba(255,255,255,0.6);border-radius:3px;width:${((c.score||0)/STANDS.length*100)}%;transition:width 0.8s ease"></div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:22px;font-weight:800">${c.score||0}</div>
+              <div style="font-size:13px;opacity:0.5">/${STANDS.length}</div>
+            </div>
           </div>`).join('')}
       </div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        ${all.slice(3).map((c,i)=>`
-          <div style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px 20px;display:flex;align-items:center;gap:16px">
-            <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;opacity:0.4;width:32px;text-align:center">${i+4}</div>
-            <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;flex:1">${c.name}${c.finishTime?' ✓':''}</div>
-            <div style="width:180px;height:6px;background:rgba(255,255,255,0.12);border-radius:3px"><div style="height:100%;background:rgba(255,255,255,0.6);border-radius:3px;width:${((c.score||0)/STANDS.length*100)}%"></div></div>
-            <div style="text-align:right"><div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800">${c.score||0}</div><div style="font-size:13px;opacity:0.5">/${STANDS.length}</div></div>
-          </div>`).join('')}
-      </div>
-      <div style="margin-top:32px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;opacity:0.3;letter-spacing:2px;text-transform:uppercase">${all.length} entreprise${all.length>1?'s':''} en compétition</div>
+      <div style="margin-top:32px;text-align:center;font-size:13px;font-weight:600;opacity:0.3;letter-spacing:2px;text-transform:uppercase">${all.length} entreprise${all.length>1?'s':''} en compétition</div>
     `
   })
 }
@@ -1419,14 +1476,15 @@ function renderApp(){
         return (a.finishTime||Infinity) - (b.finishTime||Infinity)
       })
       document.getElementById('lb-sub').textContent = all.length + ' participant' + (all.length>1?'s':'')
-      const medals = ['1er','2e','3e']
+      const podiumColors = ['#FFD700','#C0C0C0','#CD7F32']
+      const podiumLabels = ['1er','2e','3e']
       document.getElementById('podium').innerHTML = all.slice(0,3).map((c,i) =>
-        `<div class="pod ${i===0?'first':''}">
-          <div class="pod-medal">${medals[i]||''}</div>
+        `<div class="pod ${i===0?'first':''}" style="border-color:${podiumColors[i]}20">
+          <div class="pod-medal" style="color:${podiumColors[i]}">${podiumLabels[i]||''}</div>
           <div class="pod-name">${c.name}</div>
           <div class="pod-score">${c.score||0}/${STANDS.length}</div>
           ${c.finishTime?'<div class="pod-finish">Terminé</div>':''}
-          <div class="pod-bar"></div>
+          <div class="pod-bar" style="background:${podiumColors[i]}"></div>
         </div>`
       ).join('')
       document.getElementById('lb-list').innerHTML = all.slice(3).map((c,i) => {
