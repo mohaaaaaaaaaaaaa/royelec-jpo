@@ -8,7 +8,6 @@ const STANDS = [
   { name: 'Airwell',        slug: 'airwell',        logo: 'airwell.png',        url: 'https://www.airwell.com' },
   { name: 'Airzone France', slug: 'airzone-france', logo: 'airzone-france.svg', url: 'https://www.airzonecontrol.com/ff/fr/' },
   { name: 'Asled',          slug: 'asled',          logo: 'asled.png',          url: 'https://www.asled.fr' },
-  { name: 'Axelair',        slug: 'axelair',        logo: 'axelair.svg',        url: 'https://www.axelair-ventilation.com/fr/' },
   { name: 'Bailey Lights',  slug: 'bailey-lights',  logo: 'bailey-lights.svg',  url: 'https://www.bailey.nl/fr' },
   { name: 'Came France',    slug: 'came-france',    logo: 'came-france.png',    url: 'https://www.came.com/fr' },
   { name: 'Courant',        slug: 'courant',        logo: 'courant.png',        url: 'https://www.courant.fr' },
