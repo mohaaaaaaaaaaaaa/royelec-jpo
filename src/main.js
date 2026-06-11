@@ -18,7 +18,6 @@ const STANDS = [
   { name: 'Feilo Sylvania', slug: 'feilo-sylvania', logo: 'Sylvania.png',       url: 'https://www.sylvania-group.com/fr-fr/' },
   { name: 'Finder France',  slug: 'finder-france',  logo: 'finder-france.png',  url: 'https://www.findernet.com/fr' },
   { name: 'Gewiss France',  slug: 'gewiss-france',  logo: 'gewiss-france.jpg',  url: 'https://www.gewiss.com/fr/fr/' },
-  { name: 'GREE',           slug: 'gree',           logo: 'gree.svg',           url: 'https://greeproducts.com/fr/' },
   { name: 'Hager',          slug: 'hager',          logo: 'hager.png',          url: 'https://www.hager.fr' },
   { name: 'Indigo Lighting',slug: 'indigo-lighting',logo: 'indigo-lighting.png',url: 'https://www.indigo-lighting.com' },
   { name: 'Intuis',         slug: 'intuis',         logo: 'intuis.png',         url: 'https://www.intuis.fr' },
