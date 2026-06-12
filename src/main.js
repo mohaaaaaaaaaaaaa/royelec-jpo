@@ -571,7 +571,7 @@ async function loadAdminData(){
   }
 
   // Attribuer un prix manuellement
-  window.adminGivePrize = async function(key, name){
+  window.adminGivePrize = async function(key, name, rank){
     const configSnap = await get(ref(db,'config'))
     const config = configSnap.exists() ? configSnap.val() : {}
     const prizes = config.prizes || PRIZES_DEFAULT
@@ -740,8 +740,13 @@ async function loadAdminData(){
             <div style="font-size:13px;color:#9B4DBB;font-weight:700">${c.score||0}/${STANDS.length}</div>
             ${c.finishTime ? '<div style="font-size:10px;color:#FFD700">Terminé</div>' : ''}
           </div>
-          ${c.prize ? `<div style="font-size:11px;color:#FFD700;font-weight:700;max-width:70px;text-align:right;line-height:1.2;margin-right:8px">${c.prize}</div>` : ''}
-          <button onclick="deleteParticipant('${key}','${c.name.replace(/'/g,"\\'")}',this)" style="background:rgba(255,50,50,0.15);border:1px solid rgba(255,50,50,0.3);color:#ff6b6b;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;flex-shrink:0">Suppr.</button>
+                    <div style="flex-shrink:0;text-align:right;margin-right:6px">
+            ${c.prize
+              ? `<div style="background:rgba(255,215,0,0.15);border:1px solid rgba(255,215,0,0.4);border-radius:6px;padding:3px 8px;font-size:10px;color:#FFD700;font-weight:700;max-width:90px;line-height:1.3">${c.prize}</div>`
+              : `<button onclick="adminGivePrize('${key}','${c.name.replace(/'/g,"\'")}','${i}')" style="background:rgba(255,215,0,0.1);border:1px solid rgba(255,215,0,0.3);color:#FFD700;border-radius:6px;padding:4px 8px;font-size:10px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700">Donner prix</button>`
+            }
+          </div>
+          <button onclick="deleteParticipant('${key}','${c.name.replace(/'/g,"\'")}',this)" style="background:rgba(255,50,50,0.15);border:1px solid rgba(255,50,50,0.3);color:#ff6b6b;border-radius:6px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-weight:700;flex-shrink:0">X</button>
         </div>`
       }).join('')}
     `
@@ -1483,9 +1488,10 @@ function renderApp(){
     if(url.includes('admin-roulette-podium')){
       stopScanner()
       get(ref(db, 'companies/' + state.companyKey)).then(async snap => {
-        if(!snap.exists()){ showToast('Compte introuvable'); return }
+        if(!snap.exists()){ showToast('Inscrivez-vous d\'abord sur le site'); return }
         const data = snap.val()
         if(data.prize){ showPrizeResult(data.prize); return }
+        if((data.score||0) === 0){ showToast('Vous devez visiter au moins un stand'); return }
         // Forcer le rang podium pour avoir le bonus
         const savedRank = state.rank
         state.rank = Math.min(state.rank || 1, 1)
@@ -1499,9 +1505,10 @@ function renderApp(){
     if(url.includes('admin-roulette-standard')){
       stopScanner()
       get(ref(db, 'companies/' + state.companyKey)).then(async snap => {
-        if(!snap.exists()){ showToast('Compte introuvable'); return }
+        if(!snap.exists()){ showToast('Inscrivez-vous d\'abord sur le site'); return }
         const data = snap.val()
         if(data.prize){ showPrizeResult(data.prize); return }
+        if((data.score||0) === 0){ showToast('Vous devez visiter au moins un stand'); return }
         // Tirage sans bonus podium
         const savedRank = state.rank
         state.rank = null
