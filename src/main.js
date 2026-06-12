@@ -12,7 +12,6 @@ const STANDS = [
   { name: 'Came France',    slug: 'came-france',    logo: 'came-france.png',    url: 'https://www.came.com/fr' },
   { name: 'Courant',        slug: 'courant',        logo: 'courant.png',        url: 'https://www.courant.fr' },
   { name: 'Deltadore',      slug: 'deltadore',      logo: 'deltadore.svg',      url: 'https://www.deltadore.fr' },
-  { name: 'Engitechs',      slug: 'engitechs',      logo: 'engitechs.svg',      url: 'https://www.engitechs.com' },
   { name: "EUR'OHM",        slug: 'eurohm',         logo: 'EurOhm.png',         url: 'https://eur-ohm.com/' },
   { name: 'Europole',       slug: 'europole',       logo: 'europole.png',       url: 'https://www.europole.com' },
   { name: 'Feilo Sylvania', slug: 'feilo-sylvania', logo: 'Sylvania.png',       url: 'https://www.sylvania-group.com/fr-fr/' },
@@ -29,6 +28,8 @@ const STANDS = [
   { name: 'Theben',         slug: 'theben',         logo: 'theben.svg',         url: 'https://www.theben.fr' },
   { name: 'Thermor',        slug: 'thermor',        logo: 'thermor.svg',        url: 'https://www.thermor.com' },
   { name: 'Urmet',          slug: 'urmet',          logo: 'urmet.svg',          url: 'https://www.urmet.fr/' },
+  { name: 'Schneider Electric',      slug: 'schneider-electric',      logo: 'schneider.png',      url: 'https://www.se.com/fr/fr/' },
+  { name: 'Legrand',          slug: 'legrand',          logo: 'legrand.png',          url: 'https://www.legrand.fr/' },
 ]
 
 // Tiers : tier:'common'=bleu (80% total), tier:'rare'=rose (16%), tier:'legendary'=or (4%)
