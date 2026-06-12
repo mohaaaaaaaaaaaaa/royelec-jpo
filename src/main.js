@@ -27,9 +27,9 @@ const STANDS = [
   { name: 'Teddington',     slug: 'teddington',     logo: 'teddington.png',     url: 'https://www.teddington.com/' },
   { name: 'Theben',         slug: 'theben',         logo: 'theben.svg',         url: 'https://www.theben.fr' },
   { name: 'Thermor',        slug: 'thermor',        logo: 'thermor.svg',        url: 'https://www.thermor.com' },
-  { name: 'Urmet',          slug: 'urmet',          logo: 'urmet.svg',          url: 'https://www.urmet.fr/' },
-  { name: 'Schneider Electric',      slug: 'schneider-electric',      logo: 'schneider.png',      url: 'https://www.se.com/fr/fr/' },
-  { name: 'Legrand',          slug: 'legrand',          logo: 'legrand.png',          url: 'https://www.legrand.fr/' },
+  { name: 'Legrand',           slug: 'legrand',           logo: 'legrand.png',   url: 'https://www.legrand.fr/' },
+  { name: 'Schneider Electric',slug: 'schneider-electric', logo: 'schneider.png', url: 'https://www.se.com/fr/fr/' },
+  { name: 'Urmet',             slug: 'urmet',             logo: 'urmet.svg',     url: 'https://www.urmet.fr/' },
 ]
 
 // Tiers : tier:'common'=bleu (80% total), tier:'rare'=rose (16%), tier:'legendary'=or (4%)
@@ -178,6 +178,14 @@ function renderAdmin(){
           </div>
         </div>
         <div id="admin-participants" style="font-size:14px;color:rgba(255,255,255,0.7)">Chargement...</div>
+        <div id="admin-give-prize-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:9999;align-items:center;justify-content:center;padding:24px">
+          <div style="background:#1A0028;border:1px solid #3A1060;border-radius:16px;padding:24px;max-width:380px;width:100%">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:white;margin-bottom:4px">Attribuer un prix</div>
+            <div id="modal-company-name" style="font-size:13px;color:#9B4DBB;margin-bottom:16px"></div>
+            <div id="modal-prizes-list"></div>
+            <button onclick="document.getElementById('admin-give-prize-modal').style.display='none'" style="margin-top:12px;width:100%;padding:10px;background:rgba(255,255,255,0.1);color:white;border:none;border-radius:8px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;cursor:pointer">Annuler</button>
+          </div>
+        </div>
       </div>
 
       <!-- HEURE -->
@@ -335,6 +343,13 @@ function renderAdmin(){
     </div>
   </div>
   `
+
+  function showToast(msg){
+    let t = document.getElementById('admin-toast')
+    if(!t){ t = document.createElement('div'); t.id='admin-toast'; t.style.cssText='position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#3A1050;color:white;padding:11px 22px;border-radius:30px;font-family:Barlow Condensed,sans-serif;font-size:14px;font-weight:700;opacity:0;transition:opacity .3s;pointer-events:none;z-index:99999'; document.body.appendChild(t) }
+    t.textContent = msg; t.style.opacity='1'
+    setTimeout(() => t.style.opacity='0', 2600)
+  }
 
   document.getElementById('admin-login-btn').addEventListener('click', () => {
     const pwd = document.getElementById('admin-pwd').value
@@ -549,6 +564,49 @@ async function loadAdminData(){
     document.getElementById('admin-test-pct').textContent = 'Chance globale : ' + (chosen.probGlobal*100).toFixed(1) + '%'
   })
 
+  // Supprimer un participant
+  window.adminDeleteParticipant = async function(key, name){
+    if(!confirm('Supprimer ' + name + ' ?')) return
+    await set(ref(db, 'companies/' + key), null)
+  }
+
+  // Attribuer un prix manuellement
+  window.adminGivePrize = async function(key, name){
+    const configSnap = await get(ref(db,'config'))
+    const config = configSnap.exists() ? configSnap.val() : {}
+    const prizes = config.prizes || PRIZES_DEFAULT
+    const modal = document.getElementById('admin-give-prize-modal')
+    document.getElementById('modal-company-name').textContent = name
+    document.getElementById('modal-prizes-list').innerHTML = prizes.map(p => {
+      const tc = TIER_COLORS[p.tier||'common']
+      const outOfStock = (p.stock||0) === 0
+      return `<div style="display:flex;align-items:center;gap:10px;padding:10px;background:#0D0015;border-radius:8px;margin-bottom:8px;border:1px solid ${tc.border};${outOfStock?'opacity:0.4':''}">
+        <img src="${p.img}" style="width:40px;height:36px;object-fit:contain">
+        <div style="flex:1">
+          <div style="font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;color:white">${p.name}</div>
+          <div style="font-size:11px;color:${tc.label}">${tc.name} · Stock : ${p.stock||0}</div>
+        </div>
+        <button onclick="adminAssignPrize('${key}','${p.name}')" ${outOfStock?'disabled':''} style="background:${outOfStock?'rgba(255,255,255,0.05)':'linear-gradient(135deg,#3A1050,#5A1F78)'};border:1px solid ${tc.border};color:${outOfStock?'rgba(255,255,255,0.3)':'white'};border-radius:6px;padding:6px 12px;font-size:12px;cursor:${outOfStock?'not-allowed':'pointer'};font-family:'Barlow Condensed',sans-serif;font-weight:700">Attribuer</button>
+      </div>`
+    }).join('')
+    modal.style.display = 'flex'
+  }
+
+  window.adminAssignPrize = async function(key, prizeName){
+    await update(ref(db, 'companies/' + key), { prize: prizeName })
+    // Décrémenter le stock
+    const configSnap = await get(ref(db,'config'))
+    const config = configSnap.exists() ? configSnap.val() : {}
+    const prizes = config.prizes || PRIZES_DEFAULT
+    const idx = prizes.findIndex(p => p.name === prizeName)
+    if(idx >= 0 && prizes[idx].stock > 0){
+      prizes[idx].stock--
+      await update(ref(db,'config'), { prizes })
+    }
+    document.getElementById('admin-give-prize-modal').style.display = 'none'
+    showToast('Prix attribué !')
+  }
+
   // Reset toutes les données
   document.getElementById('admin-reset-all').addEventListener('click', async () => {
     if(!confirm('Supprimer TOUTES les données participants ? Cette action est irréversible.')) return
@@ -704,29 +762,17 @@ window.deleteParticipant = async function(key, name, btn){
 // TV
 // ==========================================
 function renderTV(){
-  document.querySelector('#app').innerHTML = `
-    <style>
-      @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&display=swap');
-      body { margin:0; background:linear-gradient(160deg,#3A1050 0%,#5A1F78 40%,#C490DD 80%,white 100%); min-height:100vh; font-family:'Barlow Condensed',sans-serif; color:white; }
-      #tv { padding:32px; }
-      .tv-row { display:flex;align-items:center;gap:16px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px 20px;transition:all 0.6s cubic-bezier(.4,0,.2,1); }
-      .tv-row.moved-up { animation: slideUp 0.6s cubic-bezier(.4,0,.2,1); }
-      @keyframes slideUp { from { transform:translateY(60px); opacity:0; } to { transform:translateY(0); opacity:1; } }
-      @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
-      @keyframes glow { 0%,100%{box-shadow:0 0 20px rgba(255,215,0,0.3)} 50%{box-shadow:0 0 40px rgba(255,215,0,0.7)} }
-      .pod-gold { background:linear-gradient(135deg,rgba(255,215,0,0.15),rgba(255,180,0,0.05)); border:2px solid #FFD700 !important; animation:glow 2s infinite; }
-      .pod-silver { background:linear-gradient(135deg,rgba(192,192,192,0.15),rgba(150,150,150,0.05)); border:2px solid #C0C0C0 !important; }
-      .pod-bronze { background:linear-gradient(135deg,rgba(205,127,50,0.15),rgba(160,100,30,0.05)); border:2px solid #CD7F32 !important; }
-      #tv-list { display:flex; flex-direction:column; gap:10px; }
-    </style>
-    <div id="tv"></div>
-  `
+  document.querySelector('#app').innerHTML = `<div id="tv"></div>`
+  document.querySelector('#app').style.cssText = 'background:linear-gradient(160deg,#3A1050 0%,#5A1F78 40%,#C490DD 80%,white 100%);min-height:100vh;padding:32px;font-family:Barlow,sans-serif;color:white'
 
-  const PODIUM_STYLES = [
-    { label: '1ER', color: '#FFD700', shadow: 'rgba(255,215,0,0.5)', cls: 'pod-gold',   scale: 'transform:scale(1.04)' },
-    { label: '2E',  color: '#C0C0C0', shadow: 'rgba(192,192,192,0.3)', cls: 'pod-silver', scale: '' },
-    { label: '3E',  color: '#CD7F32', shadow: 'rgba(205,127,50,0.3)', cls: 'pod-bronze', scale: '' },
-  ]
+  const style = document.createElement('style')
+  style.textContent = `
+    @keyframes slideDown { from { transform:translateY(-20px); opacity:0 } to { transform:translateY(0); opacity:1 } }
+    @keyframes goldFlash { 0%,100% { box-shadow:none } 50% { box-shadow:0 0 24px rgba(255,215,0,0.6) } }
+    .tv-row-new { animation: slideDown 0.5s ease; }
+    .tv-row-promoted { animation: goldFlash 1s ease 2; }
+  `
+  document.head.appendChild(style)
 
   let prevOrder = []
 
@@ -740,60 +786,62 @@ function renderTV(){
       return (a.finishTime||Infinity) - (b.finishTime||Infinity)
     })
 
-    // Détecter les changements de position
-    const movedUp = new Set()
-    all.forEach((c, newIdx) => {
-      const oldIdx = prevOrder.indexOf(c.name)
-      if(oldIdx > newIdx && oldIdx !== -1) movedUp.add(c.name)
-    })
-    prevOrder = all.map(c => c.name)
-
-    const top3 = all.slice(0,3)
-    const rest = all.slice(3)
+    const podiumColors = [
+      { color:'#FFD700', bg:'rgba(255,215,0,0.15)',   border:'rgba(255,215,0,0.5)',   shadow:'0 0 30px rgba(255,215,0,0.25)',   scale:'scale(1.04)' },
+      { color:'#C0C0C0', bg:'rgba(192,192,192,0.1)',  border:'rgba(192,192,192,0.35)', shadow:'0 0 20px rgba(192,192,192,0.1)', scale:'scale(1)' },
+      { color:'#CD7F32', bg:'rgba(205,127,50,0.1)',   border:'rgba(205,127,50,0.35)', shadow:'0 0 20px rgba(205,127,50,0.1)',  scale:'scale(1)' },
+    ]
+    const medals = ['1ER','2E','3E']
 
     document.getElementById('tv').innerHTML = `
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:28px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:32px">
         <img src="/logo.png" style="height:64px">
         <div style="text-align:right">
-          <div style="font-size:13px;opacity:0.5;letter-spacing:3px;text-transform:uppercase">Journée Portes Ouvertes · Blois 2026</div>
-          <div style="font-size:42px;font-weight:800">Classement Live</div>
+          <div style="font-size:13px;opacity:0.5;letter-spacing:3px;text-transform:uppercase;font-family:'Barlow Condensed',sans-serif">Journée Portes Ouvertes · Blois 2026</div>
+          <div style="font-size:42px;font-weight:800;font-family:'Barlow Condensed',sans-serif">Classement Live</div>
         </div>
       </div>
-      <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);padding:6px 16px;border-radius:20px;font-size:14px;font-weight:700;letter-spacing:1px;margin-bottom:28px">
+      <div style="display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);padding:6px 16px;border-radius:20px;font-family:'Barlow Condensed',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;margin-bottom:32px">
         <div style="width:8px;height:8px;border-radius:50%;background:#7BF;animation:pulse 1.5s infinite"></div>EN DIRECT
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
-        ${top3.map((c,i) => {
-          const ps = PODIUM_STYLES[i]
-          return `<div class="${ps.cls}" style="border-radius:20px;padding:24px 16px;text-align:center;${ps.scale};box-shadow:0 0 20px ${ps.shadow}">
-            <div style="font-size:20px;font-weight:800;color:${ps.color};letter-spacing:2px;margin-bottom:6px">${ps.label}</div>
-            <div style="font-size:28px;font-weight:800;margin-bottom:6px;color:white">${c.name}</div>
-            <div style="font-size:18px;color:${ps.color};opacity:0.85">${c.score||0} / ${STANDS.length} stands</div>
-            ${c.finishTime ? '<div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px">Parcours terminé</div>' : ''}
+        ${all.slice(0,3).map((c,i) => {
+          const pc = podiumColors[i]
+          return `<div style="background:${pc.bg};border:2px solid ${pc.border};border-radius:20px;padding:24px 16px;text-align:center;transform:${pc.scale};box-shadow:${pc.shadow};transition:all 0.5s ease">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;color:${pc.color};letter-spacing:3px;margin-bottom:10px">${medals[i]}</div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:26px;font-weight:800;color:white;margin-bottom:6px">${c.name}</div>
+            <div style="font-size:17px;color:rgba(255,255,255,0.7)">${c.score||0} / ${STANDS.length} stands</div>
+            ${c.finishTime ? `<div style="font-size:12px;color:${pc.color};margin-top:4px;font-weight:700">Terminé</div>` : ''}
             <div style="height:4px;background:rgba(255,255,255,0.15);border-radius:2px;margin-top:14px">
-              <div style="height:100%;background:${ps.color};border-radius:2px;width:${((c.score||0)/STANDS.length*100)}%;transition:width 0.8s ease"></div>
+              <div style="height:100%;background:${pc.color};border-radius:2px;width:${((c.score||0)/STANDS.length*100)}%;transition:width 0.8s ease"></div>
             </div>
           </div>`
         }).join('')}
       </div>
-      <div id="tv-list">
-        ${rest.map((c,i) => `
-          <div class="tv-row ${movedUp.has(c.name) ? 'moved-up' : ''}" data-name="${c.name}">
-            <div style="font-size:22px;font-weight:800;opacity:0.4;width:32px;text-align:center">${i+4}</div>
-            <div style="font-size:22px;font-weight:700;flex:1">${c.name}${c.finishTime ? ' ✓' : ''}</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${all.slice(3).map((c,i) => {
+          const prevIdx = prevOrder.indexOf(c.name)
+          const newIdx = i + 3
+          const promoted = prevIdx > newIdx && prevIdx >= 0
+          return `<div class="${promoted ? 'tv-row-promoted' : ''}" style="background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,${promoted?'0.4':'0.1'});border-radius:12px;padding:14px 20px;display:flex;align-items:center;gap:16px;transition:all 0.6s ease">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:rgba(255,255,255,0.4);width:32px;text-align:center">${newIdx+1}</div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;flex:1;color:white">${c.name}${c.finishTime ? ' ✓' : ''}</div>
             <div style="width:180px;height:6px;background:rgba(255,255,255,0.12);border-radius:3px">
               <div style="height:100%;background:rgba(255,255,255,0.6);border-radius:3px;width:${((c.score||0)/STANDS.length*100)}%;transition:width 0.8s ease"></div>
             </div>
             <div style="text-align:right">
-              <div style="font-size:22px;font-weight:800">${c.score||0}</div>
-              <div style="font-size:13px;opacity:0.5">/${STANDS.length}</div>
+              <div style="font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;color:white">${c.score||0}</div>
+              <div style="font-size:13px;color:rgba(255,255,255,0.5)">/${STANDS.length}</div>
             </div>
-          </div>`).join('')}
+          </div>`
+        }).join('')}
       </div>
-      <div style="margin-top:32px;text-align:center;font-size:13px;font-weight:600;opacity:0.3;letter-spacing:2px;text-transform:uppercase">${all.length} entreprise${all.length>1?'s':''} en compétition</div>
+      <div style="margin-top:32px;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;opacity:0.3;letter-spacing:2px;text-transform:uppercase">${all.length} entreprise${all.length>1?'s':''} en compétition</div>
     `
+    prevOrder = all.map(c => c.name)
   })
 }
+
 
 // ==========================================
 // APP PRINCIPALE
@@ -1431,15 +1479,47 @@ function renderApp(){
 
   function extractStand(url){
 
-   if(url.includes('test-all-stands')){ 
-     state.visited = STANDS.map(s => s.name)
+    // QR code roulette PODIUM — bonus pour top 3
+    if(url.includes('admin-roulette-podium')){
+      stopScanner()
+      get(ref(db, 'companies/' + state.companyKey)).then(async snap => {
+        if(!snap.exists()){ showToast('Compte introuvable'); return }
+        const data = snap.val()
+        if(data.prize){ showPrizeResult(data.prize); return }
+        // Forcer le rang podium pour avoir le bonus
+        const savedRank = state.rank
+        state.rank = Math.min(state.rank || 1, 1)
+        await showRoulette()
+        state.rank = savedRank
+      })
+      return { name: '__test__', slug: 'test' }
+    }
+
+    // QR code roulette STANDARD — sans bonus podium
+    if(url.includes('admin-roulette-standard')){
+      stopScanner()
+      get(ref(db, 'companies/' + state.companyKey)).then(async snap => {
+        if(!snap.exists()){ showToast('Compte introuvable'); return }
+        const data = snap.val()
+        if(data.prize){ showPrizeResult(data.prize); return }
+        // Tirage sans bonus podium
+        const savedRank = state.rank
+        state.rank = null
+        await showRoulette()
+        state.rank = savedRank
+      })
+      return { name: '__test__', slug: 'test' }
+    }
+
+    if(url.includes('test-all-stands')){ 
+      state.visited = STANDS.map(s => s.name)
       update(ref(db, 'companies/' + state.companyKey), { stands: state.visited, score: STANDS.length, name: state.company })
-     stopScanner()
-     updateProg()
-     show('s-progression')
+      stopScanner()
+      updateProg()
+      show('s-progression')
       setTimeout(() => checkAndShowRoulette(), 500)
-     return { name: '__test__', slug: 'test' }
-    } 
+      return { name: '__test__', slug: 'test' }
+    }
     try {
       const u = new URL(url)
       const parts = u.pathname.split('/')
