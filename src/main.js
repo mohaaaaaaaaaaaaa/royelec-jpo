@@ -1202,7 +1202,9 @@ function renderApp(){
   document.getElementById('btn-fournisseurs').addEventListener('click', async () => {
     const configSnap = await get(ref(db,'config'))
     const config = configSnap.exists() ? configSnap.val() : {}
-    const fournisseurs = config.fournisseurs || STANDS.map(s => ({ name: s.name, url: s.url, logo: '/logos/' + s.logo }))
+    // Toujours utiliser STANDS comme base, Firebase en override optionnel
+    const baseFourn = STANDS.map(s => ({ name: s.name, url: s.url, logo: '/logos/' + s.logo }))
+    const fournisseurs = (config.fournisseurs && config.fournisseurs.length > 0) ? config.fournisseurs : baseFourn
     document.getElementById('fournisseurs-list').innerHTML = fournisseurs.map(s => `
       <a href="${s.url}" target="_blank" rel="noopener" class="fourn-row">
         <div class="fourn-logo-wrap">
